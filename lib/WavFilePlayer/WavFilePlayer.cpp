@@ -35,6 +35,7 @@ bool WavFilePlayer::begin()
 
 bool WavFilePlayer::playWavFile(const String& wavFileName)
 {
+    Serial.printf("Playing WAV file \"%s\"\n", wavFileName.c_str());
     if (_inputFile)
     {
         delete _inputFile;

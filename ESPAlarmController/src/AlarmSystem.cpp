@@ -6,6 +6,21 @@
 #include "protocol.h"
 
 
+#define htonll(x)   (((uint64_t)htonl(x & 0xFFFFFFFF) << 32) | (uint64_t)htonl(x >> 32))
+
+
+namespace
+{
+
+uint64_t macAddressToId(const uint8_t* macAddress)
+{
+    uint64_t stationId = 0;
+    memcpy(reinterpret_cast<uint8_t*>(&stationId) + 2, macAddress, 6);
+    return htonll(stationId);
+}
+
+}
+
 AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bclkPin, int wclkPin, int doutPin)
     :
     _eSPNowServer(apSSID,
@@ -13,15 +28,15 @@ AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bcl
                   [this](const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
                         onDataReceive(mac_addr, incomingData, len);
                     }),
-    _wavFilePlayer(bclkPin, wclkPin, doutPin)
+    _soundPlayer(bclkPin, wclkPin, doutPin)
 {
 }
 
 bool AlarmSystem::begin()
 {
-    if (!_wavFilePlayer.begin())
+    if (!_soundPlayer.begin())
     {
-        Serial.println("ERROR: Failed to start WAV file player");
+        Serial.println("ERROR: Failed to start sound player");
         return false;
     }
 
@@ -36,21 +51,17 @@ bool AlarmSystem::begin()
 
 void AlarmSystem::onLoop()
 {
-    _wavFilePlayer.onLoop();
+    _soundPlayer.onLoop();
 }
-
-#define htonll(x)   (((uint64_t)htonl(x & 0xFFFFFFFF) << 32) | (uint64_t)htonl(x >> 32))
 
 void AlarmSystem::onDataReceive(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 {
-    if (!_wavFilePlayer.playWavFile("/TF043.WAV"))
+    if (!_soundPlayer.playSound(SoundPlayer::SensorChimeOpened))
     {
-        Serial.println("ERROR: Failed to play WAV file");
+        Serial.println("ERROR: Failed to play sound");
     }
 
-    uint64_t stationId = 0;
-    memcpy(reinterpret_cast<uint8_t*>(&stationId) + 2, mac_addr, 6);
-    stationId = htonll(stationId);
+    uint64_t stationId = macAddressToId(mac_addr);
     Serial.printf("Received data from sensor %016llX: %d bytes\n", stationId, len);
 
     SensorState sensorState;
