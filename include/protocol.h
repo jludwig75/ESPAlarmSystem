@@ -30,7 +30,8 @@ struct SensorState
     {
         Open = 0,
         Closed = 1,
-        Fault = 2
+        Fault = 2,
+        Unknown = 3
     };
     uint8_t wakeupReason;
     State state;

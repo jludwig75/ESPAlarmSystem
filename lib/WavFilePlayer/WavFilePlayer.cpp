@@ -18,7 +18,7 @@ bool WavFilePlayer::begin()
         return false;
     }
 
-    if (!_output.SetGain(2))
+    if (!_output.SetGain(4))
     {
         Serial.println("ERROR: Failed to set ouput gain");
         return false;

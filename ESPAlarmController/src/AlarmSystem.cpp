@@ -14,9 +14,9 @@ namespace
 
 uint64_t macAddressToId(const uint8_t* macAddress)
 {
-    uint64_t stationId = 0;
-    memcpy(reinterpret_cast<uint8_t*>(&stationId) + 2, macAddress, 6);
-    return htonll(stationId);
+    uint64_t sensorId = 0;
+    memcpy(reinterpret_cast<uint8_t*>(&sensorId) + 2, macAddress, 6);
+    return htonll(sensorId);
 }
 
 }
@@ -56,13 +56,8 @@ void AlarmSystem::onLoop()
 
 void AlarmSystem::onDataReceive(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 {
-    if (!_soundPlayer.playSound(SoundPlayer::SensorChimeOpened))
-    {
-        Serial.println("ERROR: Failed to play sound");
-    }
-
-    uint64_t stationId = macAddressToId(mac_addr);
-    Serial.printf("Received data from sensor %016llX: %d bytes\n", stationId, len);
+    uint64_t sensorId = macAddressToId(mac_addr);
+    Serial.printf("Received data from sensor %016llX: %d bytes\n", sensorId, len);
 
     SensorState sensorState;
     if (len < sizeof(sensorState))
@@ -72,10 +67,51 @@ void AlarmSystem::onDataReceive(const uint8_t * mac_addr, const uint8_t *incomin
     }
 
     memcpy(&sensorState, incomingData, sizeof(sensorState));
-    Serial.printf("Sensor %016llX state: wakeup reason: \"%s\", state: \"%s\", vcc: %.2f, @ %.3f\n",
-                  stationId,
+    Serial.printf("Sensor %016llX state: wakeup reason: \"%s\", state: %s, vcc: %.2f, @ %.3f\n",
+                  sensorId,
                   SensorState::wakeupReasontoString(sensorState.wakeupReason),
                   SensorState::toString(sensorState.state),
                   sensorState.vcc,
                   static_cast<double>(millis()) / 1000.0);
+    
+    updateSensorState(sensorId, sensorState.state);
+}
+
+void AlarmSystem::updateSensorState(uint64_t sensorId, SensorState::State state)
+{
+    auto it = _senors.find(sensorId);
+    if (it == _senors.end())
+    {
+        Serial.printf("New sensor: %016llX\n", sensorId);
+
+        _senors[sensorId] = AlarmSensor(sensorId, state);
+        it = _senors.find(sensorId);
+        assert(it != _senors.end());
+    }
+
+    auto& sensor = it->second;
+    auto lastState = sensor.state;
+    if (lastState == SensorState::Closed && state == SensorState::Open)
+    {
+        if (!_soundPlayer.playSound(SoundPlayer::SensorChimeOpened))
+        {
+            Serial.println("ERROR: Failed to play sound");
+        }
+    }
+    else if (lastState == SensorState::Open && state == SensorState::Closed)
+    {
+        if (!_soundPlayer.playSound(SoundPlayer::SensorChimeClosed))
+        {
+            Serial.println("ERROR: Failed to play sound");
+        }
+    }
+    else if (state == SensorState::Fault)
+    {
+        if (!_soundPlayer.playSound(SoundPlayer::SensorFault))
+        {
+            Serial.println("ERROR: Failed to play sound");
+        }
+    }
+
+    sensor.updateState(state);
 }
