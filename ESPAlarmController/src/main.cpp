@@ -20,22 +20,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include <Arduino.h>
-
-#include <esp_now.h>
 #include <WiFi.h>
 
-#include "config.h"
+#include <ESPNowServer.h>
+#include <WavFilePlayer.h>
+
+#include "alarm_config.h"
 #include "protocol.h"
+
+
+WavFilePlayer wavFilePlayer(26, 25, 22);
 
 
 #define htonll(x)   (((uint64_t)htonl(x & 0xFFFFFFFF) << 32) | (uint64_t)htonl(x >> 32))
 
 void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 {
+    if (!wavFilePlayer.playWavFile("/TF043.WAV"))
+    {
+        Serial.println("ERROR: Failed to play WAV file");
+    }
+
     uint64_t stationId = 0;
     memcpy(reinterpret_cast<uint8_t*>(&stationId) + 2, mac_addr, 6);
     stationId = htonll(stationId);
-    Serial.printf("Received data from %016llX: %d bytes\n", stationId, len);
+    Serial.printf("Received data from sensor %016llX: %d bytes\n", stationId, len);
 
     SensorState sensorState;
     if (len < sizeof(sensorState))
@@ -45,8 +54,15 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
     }
 
     memcpy(&sensorState, incomingData, sizeof(sensorState));
-    Serial.printf("Sensor state: wakeup reason: \"%s\", state: \"%s\", vcc: %.2f\n", SensorState::wakeupReasontoString(sensorState.wakeupReason), SensorState::toString(sensorState.state), sensorState.vcc);
+    Serial.printf("Sensor %016llX state: wakeup reason: \"%s\", state: \"%s\", vcc: %.2f, @ %.3f\n",
+                  stationId,
+                  SensorState::wakeupReasontoString(sensorState.wakeupReason),
+                  SensorState::toString(sensorState.state),
+                  sensorState.vcc,
+                  static_cast<double>(millis()) / 1000.0);
 }
+
+ESPNowServer eSPNowServer(ssid, ssid_password, OnDataRecv);
 
 
 void setup()
@@ -54,35 +70,20 @@ void setup()
     Serial.begin(115200);
     delay(10);
 
-    Serial.print("ESP Board MAC Address:  ");
-    Serial.println(WiFi.macAddress());
-    // Set the device as a Station and Soft Access Point simultaneously
-    WiFi.mode(WIFI_AP_STA);
-    
-    // Set device as a Wi-Fi Station
-    WiFi.begin(ssid, ssid_password);
-    while (WiFi.status() != WL_CONNECTED)
+    if (!wavFilePlayer.begin())
     {
-        delay(1000);
-        Serial.println("Setting as a Wi-Fi Station..");
-    }
-    Serial.print("Station IP Address: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("Wi-Fi Channel: ");
-    Serial.println(WiFi.channel());
-
-    // Init ESP-NOW
-    if (esp_now_init() != ESP_OK)
-    {
-        Serial.println("Error initializing ESP-NOW");
+        Serial.println("ERROR: Failed to start WAV file player");
         return;
     }
-    
-    // Once ESPNow is successfully Init, we will register for recv CB to
-    // get recv packer info
-    esp_now_register_recv_cb(OnDataRecv);
+
+    if (!eSPNowServer.begin())
+    {
+        Serial.println("ERROR: Failed to start ESP-NOW server");
+        return;
+    }
 }
 
 void loop()
 {
+    wavFilePlayer.onLoop();
 }

@@ -53,6 +53,12 @@ ESPNowClient::ESPNowClient(const String& ssid, const BroadCastAddress& broadCast
     _ssid(ssid),
     _broadCastAddress(broadCastAddress)
 {
+    assert(!_singletonCreated);
+    if (_singletonCreated)
+    {
+        Serial.println("ERROR: ESPNowClient singleton already created");
+    }
+    _singletonCreated = true;
 }
 
 bool ESPNowClient::begin()
@@ -121,3 +127,5 @@ void ESPNowClient::onDataSent(const uint8_t *mac_addr, esp_now_send_status_t sta
     Serial.print("\r\nLast Packet Send Status:\t");
     Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
+
+bool ESPNowClient::_singletonCreated = false;

@@ -55,4 +55,5 @@ private:
     String _ssid;
     BroadCastAddress _broadCastAddress;
     esp_now_peer_info_t _peerInfo;
+    static bool _singletonCreated;
 };

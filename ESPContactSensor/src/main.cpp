@@ -23,7 +23,7 @@
 
 #include "contactsensor.h"
 
-#include "config.h"
+#include "alarm_config.h"
 
 
 ContactSensorApp contactSensor(sensorPin, ssid, ESPNowClient::BroadCastAddress(broadcastAddress));
