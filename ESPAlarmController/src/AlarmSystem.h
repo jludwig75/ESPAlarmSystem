@@ -33,7 +33,7 @@ public:
     const SensorMap& sensors() const;
     bool canArm() const;
     bool arm();
-    bool disarm();
+    void disarm();
 private:
     void onDataReceive(const uint8_t * mac_addr, const uint8_t *incomingData, int len);
     void updateSensorState(uint64_t sensorId, SensorState::State newState);

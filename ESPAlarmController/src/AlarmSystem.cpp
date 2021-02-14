@@ -117,9 +117,8 @@ std::vector<AlarmSystem::Operation> AlarmSystem::validOperations() const
     case State::Arming:
     case State::Armed:
     case State::AlarmTriggered:
-        return { Operation::Disarm };
     default:
-        return {};
+        return { Operation::Disarm };
     }
 }
 
@@ -160,16 +159,20 @@ bool AlarmSystem::arm()
     return true;
 }
 
-bool AlarmSystem::disarm()
+void AlarmSystem::disarm()
 {
     if (_alarmState == State::Disarmed)
     {
-        return true;
+        return;
     }
 
     _alarmState = State::Disarmed;
     Serial.println("Alarm system disarmed");
-    return true;
+    if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmDisarm))
+    {
+        Serial.println("ERROR: Failed to play disarm sound");
+
+    }
 }
 
 
