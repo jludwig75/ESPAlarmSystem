@@ -23,7 +23,7 @@ public:
     bool begin();
     void onLoop();
     bool playSound(Sound sound);
-    bool silence();
+    void silence();
     bool soundPlaying() const;
 protected:
     static String toFileName(Sound sound);

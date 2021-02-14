@@ -72,9 +72,9 @@ bool SoundPlayer::playSound(Sound sound)
     return _wavFilePlayer.playWavFile(soundFileName);
 }
 
-bool SoundPlayer::silence()
+void SoundPlayer::silence()
 {
-    return false;
+    _wavFilePlayer.silence();
 }
 
 bool SoundPlayer::soundPlaying() const

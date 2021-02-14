@@ -7,32 +7,15 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
-        <div>
-            <div class="display-group">
-                <div>
-                    <fieldset>
-                        <legend>Alarm Status</legend>
-                        <span id="alarm-status">Disarmed</span>
-                    </fieldset>
-                </div>
-                <div>
-                    <button>Arm</button>
-                    <button>Disarm</button>
-                </div>
-            </div>
-            <div class="display-group">
-                <fieldset>
-                    <legend>Alarm Sensors</legend>
-                    <table>
-                        <tr>
-                            <th>ID</th><th>Status</th>
-                        </tr>
-                        <tr>
-                            <td>30aea405ce1c</td><td>Closed</td>
-                        </tr>
-                    </table>
-                </fieldset>
-            </div>
+        <div id="app">
+            <alarm-system-view></alarm-system-view>
+            <sensor-list-view></sensor-list-view>
         </div>
+        <script src="/main.js"></script>
+        <script src="/AlarmSystem.js"></script>
+        <script src="/SensorList.js"></script>
+        <script>
+            const mountedApp = app.mount('#app')
+        </script>
     </body>
 </html>

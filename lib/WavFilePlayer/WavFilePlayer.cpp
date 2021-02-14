@@ -36,11 +36,9 @@ bool WavFilePlayer::begin()
 bool WavFilePlayer::playWavFile(const String& wavFileName)
 {
     Serial.printf("Playing WAV file \"%s\"\n", wavFileName.c_str());
-    if (_inputFile)
-    {
-        delete _inputFile;
-        _inputFile = nullptr;
-    }
+
+    // Stop any audio currently playing 
+    silence();
 
     _inputFile = new AudioFileSourceSPIFFS(wavFileName.c_str());
     if (_inputFile == nullptr)
@@ -62,6 +60,24 @@ bool WavFilePlayer::filePlaying() const
 {
     return const_cast<AudioGeneratorWAV&>(_wav).isRunning();
 }
+
+void WavFilePlayer::silence()
+{
+    if (_inputFile)
+    {
+        Serial.println("checking wave");
+        if (_wav.isRunning())
+        {
+            Serial.println("stopping wave");
+            _wav.stop();
+        }
+        Serial.println("deleting input file");
+        auto* t = _inputFile;
+        _inputFile = nullptr;
+        delete t;
+    }
+}
+
 
 void WavFilePlayer::onLoop()
 {

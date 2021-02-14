@@ -88,6 +88,9 @@ void AlarmSystemWebServer::begin()
     _server.on("/alarm_system/sensor", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetSensors(request); } );
     _server.on("/alarm_system/operation", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetValidOperations(request); } );
     _server.on("/alarm_system/operation", HTTP_POST, [this](AsyncWebServerRequest *request) { handlePostOperation(request); } );
+
+    // TODO: Temporary for web development!
+    // DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
     _server.begin();
 
     Serial.println("Web server started");
@@ -137,6 +140,7 @@ void AlarmSystemWebServer::handlePostOperation(AsyncWebServerRequest *request)
 
 void AlarmSystemWebServer::handleGetSensors(AsyncWebServerRequest *request) const
 {
+    Serial.println("handleGetSensors");
     StaticJsonDocument<512> doc;
     auto arrayObject = doc.to<JsonArray>();
     if (_alarmSystem.sensors().size() > 0)
