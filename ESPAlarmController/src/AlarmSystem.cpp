@@ -37,6 +37,28 @@ AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bcl
 
 bool AlarmSystem::begin()
 {
+    Serial.println("Imnitializing sensor database");
+    if (!_sensorDb.begin())
+    {
+        Serial.println("ERROR: Failed to sensor database");
+        return false;
+    }
+
+    SensorList sensors;
+    if (!_sensorDb.getAlarmSensors(sensors))
+    {
+        Serial.println("ERROR: Failed to load sensors from sensor database");
+        return false;
+    }
+
+    Serial.println("Alarm sensors loaded from sensor DB:");
+    for (const auto& sensor : sensors)
+    {
+        Serial.printf("  %016llX\n", sensor.id);
+        _senors[sensor.id] = sensor;
+    }
+    Serial.println("end of loaded alarm sensor list");
+
     if (!_soundPlayer.begin())
     {
         Serial.println("ERROR: Failed to start sound player");
@@ -184,6 +206,13 @@ void AlarmSystem::updateSensorState(uint64_t sensorId, SensorState::State newSta
         _senors[sensorId] = AlarmSensor(sensorId, newState);
         it = _senors.find(sensorId);
         assert(it != _senors.end());
+
+        Serial.printf("Storing sensor to DB: %016llX\n", sensorId);
+        if (!_sensorDb.storeSensor(_senors[sensorId]))
+        {
+            Serial.printf("ERROR: Failed to store sensor %016llX to sensor database\n", sensorId);
+            // Keep running.
+        }
     }
 
     handleSensorState(it->second, newState);
@@ -198,14 +227,14 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
 {
     if (_alarmState == State::Disarmed)
     {
-        if (sensor.state != SensorState::Open && newState == SensorState::Open)
+        if (sensor.state != SensorState::Open && newState == SensorState::Open && sensor.lastUpdate > 0)
         {
             if (!_soundPlayer.playSound(SoundPlayer::Sound::SensorChimeOpened))
             {
                 Serial.println("ERROR: Failed to play sound");
             }
         }
-        else if (sensor.state != SensorState::Closed && newState == SensorState::Closed)
+        else if (sensor.state != SensorState::Closed && newState == SensorState::Closed && sensor.lastUpdate > 0)
         {
             if (!_soundPlayer.playSound(SoundPlayer::Sound::SensorChimeClosed))
             {

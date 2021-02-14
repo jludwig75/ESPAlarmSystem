@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AlarmSensor.h>
+#include <SensorDb.h>
 #include <ESPNowServer.h>
 #include <SoundPlayer.h>
 
@@ -40,6 +40,7 @@ private:
     // TODO: The nex two methods need to be moved to a policy class:
     void handleSensorState(AlarmSensor& sensor, SensorState::State newState);
     void checkSensors();
+    SensorDataBase _sensorDb;
     ESPNowServer _eSPNowServer;
     SoundPlayer _soundPlayer;
     SensorMap _senors;    // Well slap me! I used and STL container in FW code!
