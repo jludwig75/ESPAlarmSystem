@@ -30,6 +30,7 @@ AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bcl
                         onDataReceive(mac_addr, incomingData, len);
                     }),
     _soundPlayer(bclkPin, wclkPin, doutPin),
+    _webServer(*this),
     _alarmState(State::Disarmed),
     _lastCheck(0)
 {
@@ -71,6 +72,9 @@ bool AlarmSystem::begin()
         return false;
     }
 
+    Serial.println("Initializing web server");
+    _webServer.begin();
+
     return true;
 }
 
@@ -97,6 +101,7 @@ void AlarmSystem::onLoop()
         checkSensors();
     }
     _soundPlayer.onLoop();
+    _webServer.onLoop();
 }
 
 AlarmSystem::State AlarmSystem::state() const

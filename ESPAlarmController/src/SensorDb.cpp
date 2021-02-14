@@ -13,17 +13,12 @@ static String toString(uint64_t v)
 {
     String high;
 
-    Serial.printf("Converting %016llX to a string\n", v);
-
     if (v > 0xFFFFFFFF)
     {
-        Serial.println("Convering high part of uint64_t to string");
         high = String(static_cast<uint32_t>(v >> 32), 16);
     }
 
-    Serial.println("Convering low part of uint64_t to string");
     auto ret =  high + String(static_cast<uint32_t>(v & 0xFFFFFFFF), 16);
-    Serial.printf("Converted %016llX to a string \"%s\"\n", v, ret.c_str());
     return ret;
 }
 
@@ -87,7 +82,6 @@ SensorDataBase::SensorDataBase()
 
 bool SensorDataBase::begin()
 {
-    Serial.println("Initializing SPIFFS");
     if(!SPIFFS.begin())
     {
         Serial.println("ERROR: SPIFFS Mount Failed");
@@ -95,7 +89,6 @@ bool SensorDataBase::begin()
     }
 
     // Create a DB file if one does not yet exist
-    Serial.println("Ensuring sensor databse file exists");
     if (!SPIFFS.exists(sensorDbFileName))
     {
         Serial.println("Creating initial sensor datbase file");
@@ -105,20 +98,14 @@ bool SensorDataBase::begin()
             return false;
         }
     }
-    else
-    {
-        Serial.println("Sensor databse file exists");
-    }
 
     return true;
 }
 
 bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
 {
-    Serial.println("getAlarmSensors");
     if (!_listLoaded)
     {
-        Serial.println("loading sensor DB file");
         auto dbFile = SPIFFS.open(sensorDbFileName, FILE_READ);
 
         StaticJsonDocument<1024> doc;
@@ -133,7 +120,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
         // load the list
         if (!doc.containsKey("sensors"))
         {
-            Serial.println("Sensor database file has no \"sensors\" key\n");
+            Serial.println("ERROR: Sensor database file has no \"sensors\" key\n");
             return false;
         }
         auto sensorList = doc["sensors"].as<JsonArray>();
@@ -141,7 +128,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
         {
             if (!sensor.containsKey("id"))
             {
-                Serial.println("Sensor database file sensor object has no \"id\" key\n");
+                Serial.println("ERROR: Sensor database file sensor object has no \"id\" key\n");
                 return false;
             }
             auto idString = sensor["id"].as<String>();
@@ -163,7 +150,6 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
 
 bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
 {
-    Serial.printf("Looking for sensor %016llX in DB\n", sensor.id);
     auto sensorList = _sensors;
     for (const auto& sensorInList : sensorList)
     {
@@ -176,7 +162,6 @@ bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
 
     sensorList.push_back(sensor);
 
-    Serial.println("Writing sensor list to DB file");
     if (!writeDbFile(sensorList))
     {
         Serial.println("ERROR: Failed to write sensor list to file");
@@ -190,7 +175,6 @@ bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
 
 bool SensorDataBase::writeDbFile(const SensorList& sensors)
 {
-    Serial.println("Opening sensor DB file");
     auto dbFile = SPIFFS.open(sensorDbFileName, FILE_WRITE);
     if (!dbFile)
     {
@@ -198,24 +182,18 @@ bool SensorDataBase::writeDbFile(const SensorList& sensors)
         return false;
     }
 
-    Serial.println("Creating json doc");
     StaticJsonDocument<512> doc;
-    Serial.println("Creating sensor json array");
     JsonArray arrayData = doc.createNestedArray("sensors");
     for (const auto& sensor : sensors)
     {
-        Serial.println("Creating sensor json object");
         auto sensorObj = arrayData.createNestedObject();
 
-        Serial.printf("Storing sensor ID %016llX in sensor json object\n", sensor.id);
         sensorObj["id"] = toString(sensor.id);
     }
 
     // TODO: Check for and handle file write errors.
-    Serial.println("Serializing json doc to file");
     serializeJson(doc, dbFile);
     dbFile.close();
 
-    Serial.println("Done writing json DB file");
     return true;
 }

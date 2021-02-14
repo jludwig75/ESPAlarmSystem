@@ -1,5 +1,6 @@
 #pragma once
 
+#include <AlarmWebServer.h>
 #include <SensorDb.h>
 #include <ESPNowServer.h>
 #include <SoundPlayer.h>
@@ -23,7 +24,8 @@ public:
     enum class Operation
     {
         Arm,
-        Disarm
+        Disarm,
+        Invalid
     };
     AlarmSystem(const String& apSSID, const String& apPassword, int bclkPin, int wclkPin, int doutPin);
     bool begin();
@@ -43,6 +45,7 @@ private:
     SensorDataBase _sensorDb;
     ESPNowServer _eSPNowServer;
     SoundPlayer _soundPlayer;
+    AlarmSystemWebServer _webServer;
     SensorMap _senors;    // Well slap me! I used and STL container in FW code!
     State _alarmState;
     unsigned long _lastCheck;
