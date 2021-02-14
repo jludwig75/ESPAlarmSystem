@@ -1,14 +1,37 @@
 <html>
     <head>
+        <title>LED String Controller</title>
+        <link rel="stylesheet" href="/styles.css" />
+        <script src="https://unpkg.com/vue@next"></script>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
         <div>
-            <div>
-                Disarmed
+            <div class="display-group">
+                <div>
+                    <fieldset>
+                        <legend>Alarm Status</legend>
+                        <span id="alarm-status">Disarmed</span>
+                    </fieldset>
+                </div>
+                <div>
+                    <button>Arm</button>
+                    <button>Disarm</button>
+                </div>
             </div>
-            <div>
-                <button>Arm</button>
-                <button>Disarm</button>
+            <div class="display-group">
+                <fieldset>
+                    <legend>Alarm Sensors</legend>
+                    <table>
+                        <tr>
+                            <th>ID</th><th>Status</th>
+                        </tr>
+                        <tr>
+                            <td>30aea405ce1c</td><td>Closed</td>
+                        </tr>
+                    </table>
+                </fieldset>
             </div>
         </div>
     </body>

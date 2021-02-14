@@ -1,0 +1,30 @@
+.display-group {
+    float: left;
+    margin: 1em;
+}
+
+button {
+    margin:  0.5em;
+}
+
+#alarm-status {
+    font-weight: bold;
+    background-color:rgb(215, 230, 248);
+    padding: 0.5em;
+    text-align: center;
+}
+
+th {
+    padding: 0.5em;
+    text-align: left;
+}
+
+td {
+    padding: 0.5em;
+    text-align: left;
+    background-color:rgb(215, 230, 248);
+}
+
+fieldset {
+    padding: 0.8em;
+}
