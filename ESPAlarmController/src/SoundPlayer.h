@@ -6,8 +6,9 @@
 class SoundPlayer
 {
 public:
-    enum Sound
+    enum class Sound
     {
+        Silence,
         SensorChimeOpened,
         SensorChimeClosed,
         SensorFault,
@@ -21,8 +22,9 @@ public:
     SoundPlayer(int bclkPin, int wclkPin, int doutPin);
     bool begin();
     void onLoop();
-    bool playSound(Sound sound, bool continuousRepeat = false);
+    bool playSound(Sound sound);
     bool silence();
+    bool soundPlaying() const;
 protected:
     static String toFileName(Sound sound);
 private:

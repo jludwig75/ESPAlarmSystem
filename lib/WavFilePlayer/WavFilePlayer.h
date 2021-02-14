@@ -15,6 +15,7 @@ public:
     WavFilePlayer(int bclkPin, int wclkPin, int doutPin);
     bool begin();
     bool playWavFile(const String& wavFileName);
+    bool filePlaying() const;
     void onLoop();
 private:
     int _bclkPin;

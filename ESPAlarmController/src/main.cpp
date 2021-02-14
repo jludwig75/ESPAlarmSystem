@@ -25,7 +25,7 @@
 #include "alarm_config.h"
 
 
-AlarmSystem alarmSystem(ssid, ssid_password, 26, 25, 22);
+AlarmSystem alarmSystem(SSID, SSID_PASSWORD, 26, 25, 22);
 
 
 void setup()
@@ -35,9 +35,15 @@ void setup()
 
     if (!alarmSystem.begin())
     {
-        Serial.println("ERROR: Failed to start alarm system");
-        return;
+        Serial.println("ERROR: Failed to start alarm system. Restarting in 5 seconds...");
+        delay(5000);
+        ESP.restart();
     }
+
+    // if (!alarmSystem.arm())
+    // {
+    //     Serial.println("Failed to arm alarm system");
+    // }
 }
 
 void loop()

@@ -23,10 +23,11 @@
 
 #include "contactsensor.h"
 
-#include "alarm_config.h"
+#include <alarm_config.h>
 
+const uint8_t broadcastAddress[] = BROADCAST_ADDRESS;
 
-ContactSensorApp contactSensor(sensorPin, ssid, ESPNowClient::BroadCastAddress(broadcastAddress));
+ContactSensorApp contactSensor(SENSOR_PIN, SSID, ESPNowClient::BroadCastAddress(broadcastAddress));
 
 
 void setup()

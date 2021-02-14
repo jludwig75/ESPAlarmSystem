@@ -11,7 +11,8 @@ public:
         :
         id(0),
         state(SensorState::Unknown),
-        lastUpdate(0)
+        lastUpdate(0),
+        faultLastHandled(0)
     {
     }
 
@@ -19,7 +20,8 @@ public:
         :
         id(id),
         state(state),
-        lastUpdate(0)
+        lastUpdate(0),
+        faultLastHandled(0)
     {
     }
 
@@ -32,4 +34,5 @@ public:
     uint64_t id;
     SensorState::State state;
     unsigned long lastUpdate;
+    unsigned long faultLastHandled;
 };

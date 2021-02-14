@@ -21,6 +21,7 @@
 // SOFTWARE.
 #include "contactsensor.h"
 
+#include <alarm_config.h>
 #include "protocol.h"
 
 
@@ -54,7 +55,7 @@ bool ContactSensorApp::setup()
 {
     _switchSensor.begin();
 
-    if (_deepSleep.wakeupOnTimer(60 * 1000 * 1000) != ESP_OK)
+    if (_deepSleep.wakeupOnTimer(SENOR_UPDATE_INTERVAL_MS * 1000) != ESP_OK)
     {
         return false;
     }

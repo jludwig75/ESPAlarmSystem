@@ -58,6 +58,11 @@ bool WavFilePlayer::playWavFile(const String& wavFileName)
     return true;
 }
 
+bool WavFilePlayer::filePlaying() const
+{
+    return const_cast<AudioGeneratorWAV&>(_wav).isRunning();
+}
+
 void WavFilePlayer::onLoop()
 {
     if (_wav.isRunning())
