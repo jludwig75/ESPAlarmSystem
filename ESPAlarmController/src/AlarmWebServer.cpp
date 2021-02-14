@@ -8,19 +8,6 @@
 namespace
 {
 
-static String toString(uint64_t v)
-{
-    String high;
-
-    if (v > 0xFFFFFFFF)
-    {
-        high = String(static_cast<uint32_t>(v >> 32), 16);
-    }
-
-    auto ret =  high + String(static_cast<uint32_t>(v & 0xFFFFFFFF), 16);
-    return ret;
-}
-
 String toString(AlarmSystem::State state)
 {
     switch (state)
@@ -94,62 +81,59 @@ AlarmSystemWebServer::AlarmSystemWebServer(AlarmSystem& alarmSystem)
 
 void AlarmSystemWebServer::begin()
 {
-    _server.on("/state", HTTP_GET, [this]() { handleGetState(); } );
-    _server.on("/sensors", HTTP_GET, [this]() { handleGetSensors(); } );
-    _server.on("/operation", HTTP_GET, [this]() { handleGetValidOperations(); } );
-    _server.on("/operation", HTTP_POST, [this]() { handlePostOperation(); } );
+    _server.on("/alarm_system/state", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetState(request); } );
+    // This has to be before the following handler or that handler overrides this one.
+    _server.on("^\\/alarm_system\\/sensor\\/(.+)$", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetSensor(request); } );
+    _server.on("/alarm_system/sensor", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetSensors(request); } );
+    _server.on("/alarm_system/operation", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetValidOperations(request); } );
+    _server.on("/alarm_system/operation", HTTP_POST, [this](AsyncWebServerRequest *request) { handlePostOperation(request); } );
     _server.begin();
     Serial.println("Web server started");
 }
 
-void AlarmSystemWebServer::onLoop()
+void AlarmSystemWebServer::handleGetState(AsyncWebServerRequest *request) const
 {
-    _server.handleClient();
+    request->send(200, "text/plain", toString(_alarmSystem.state()));
 }
 
-void AlarmSystemWebServer::handleGetState() const
+void AlarmSystemWebServer::handlePostOperation(AsyncWebServerRequest *request)
 {
-    _server.send(200, "text/plain", toString(_alarmSystem.state()));
-}
-
-void AlarmSystemWebServer::handlePostOperation()
-{
-    if (!_server.hasArg("operation"))
+    if (!request->hasArg("operation"))
     {
-        _server.send(400, "plain/text", "No operation specified");
+        request->send(400, "plain/text", "No operation specified");
         return;
     }
 
-    String operationString = _server.arg("operation");
+    String operationString = request->arg("operation");
     auto operation = operationFromString(operationString);
     switch (operation)
     {
     case AlarmSystem::Operation::Arm:
         if (!_alarmSystem.canArm())
         {
-            _server.send(405, "plain/text", "Alarm system cannot be armed. Sensors opened or faulted");
+            request->send(405, "plain/text", "Alarm system cannot be armed. Sensors opened or faulted");
             return;
         }
 
         if (!_alarmSystem.arm())
         {
-            _server.send(500, "plain/text", "Failed to arm alarm system");
+            request->send(500, "plain/text", "Failed to arm alarm system");
             return;
         }
 
-        _server.send(200, "text/plain", "OK");
+        request->send(200, "text/plain", "OK");
         return;
     case AlarmSystem::Operation::Disarm:
         _alarmSystem.disarm();
-        _server.send(200, "text/plain", "OK");
+        request->send(200, "text/plain", "OK");
         return;
     default:
-        _server.send(400, "plain/text", "Invalid operation specified: " + operationString);
+        request->send(400, "plain/text", "Invalid operation specified: " + operationString);
         return;
     }
 }
 
-void AlarmSystemWebServer::handleGetSensors() const
+void AlarmSystemWebServer::handleGetSensors(AsyncWebServerRequest *request) const
 {
     StaticJsonDocument<512> doc;
     auto arrayObject = doc.to<JsonArray>();
@@ -158,19 +142,49 @@ void AlarmSystemWebServer::handleGetSensors() const
         for (const auto& pair : _alarmSystem.sensors())
         {
             const auto& sensor = pair.second;
-            auto sensorObj = arrayObject.createNestedObject();
-            sensorObj["id"] = toString(sensor.id);
-            sensorObj["state"] = toString(sensor.state);
-            sensorObj["lastUpdate"] = sensor.lastUpdate;
+            arrayObject.add(toString(sensor.id));
         }
     }
 
     String output;
     serializeJson(doc, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }
 
-void AlarmSystemWebServer::handleGetValidOperations() const
+void AlarmSystemWebServer::handleGetSensor(AsyncWebServerRequest *request) const
+{
+    auto sensorIdString = request->pathArg(0);
+    uint64_t sensorId;
+    if (!fromString(sensorIdString, sensorId))
+    {
+        request->send(400, "plain/text", "Invalid sensor ID: " + sensorIdString);
+        return;
+    }
+
+    if (_alarmSystem.sensors().size() > 0)
+    {
+        for (const auto& pair : _alarmSystem.sensors())
+        {
+            const auto& sensor = pair.second;
+            if (sensor.id == sensorId)
+            {
+                StaticJsonDocument<512> doc;
+                auto sensorObj = doc.to<JsonObject>();
+                sensorObj["id"] = toString(sensor.id);
+                sensorObj["state"] = toString(sensor.state);
+                sensorObj["lastUpdate"] = (millis() - sensor.lastUpdate) / 1000;
+                String output;
+                serializeJson(doc, output);
+                request->send(200, "application/json", output);
+                return;
+            }
+        }
+    }
+
+    request->send(404, "plain/text", "Cannot find sensor " + sensorIdString);
+}
+
+void AlarmSystemWebServer::handleGetValidOperations(AsyncWebServerRequest *request) const
 {
     StaticJsonDocument<512> doc;
     auto arrayObject = doc.to<JsonArray>();
@@ -184,5 +198,5 @@ void AlarmSystemWebServer::handleGetValidOperations() const
 
     String output;
     serializeJson(doc, output);
-    _server.send(200, "application/json", output);
+    request->send(200, "application/json", output);
 }

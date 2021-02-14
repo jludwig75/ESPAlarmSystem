@@ -36,3 +36,7 @@ public:
     unsigned long lastUpdate;
     unsigned long faultLastHandled;
 };
+
+
+String toString(uint64_t v);
+bool fromString(const String& str, uint64_t& v);

@@ -101,7 +101,6 @@ void AlarmSystem::onLoop()
         checkSensors();
     }
     _soundPlayer.onLoop();
-    _webServer.onLoop();
 }
 
 AlarmSystem::State AlarmSystem::state() const

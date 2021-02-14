@@ -1,6 +1,7 @@
 #pragma once
 
 #include <WebServer.h>
+#include <ESPAsyncWebServer.h>
 
 
 class AlarmSystem;
@@ -11,12 +12,12 @@ class AlarmSystemWebServer
 public:
     AlarmSystemWebServer(AlarmSystem& alarmSystem);
     void begin();
-    void onLoop();
 private:
-    void handleGetState() const;
-    void handleGetSensors() const;
-    void handleGetValidOperations() const;
-    void handlePostOperation();
+    void handleGetState(AsyncWebServerRequest *request) const;
+    void handleGetSensor(AsyncWebServerRequest *request) const;
+    void handleGetSensors(AsyncWebServerRequest *request) const;
+    void handleGetValidOperations(AsyncWebServerRequest *request) const;
+    void handlePostOperation(AsyncWebServerRequest *request);
     AlarmSystem& _alarmSystem;
-    mutable WebServer _server;
+    mutable AsyncWebServer _server;
 };
