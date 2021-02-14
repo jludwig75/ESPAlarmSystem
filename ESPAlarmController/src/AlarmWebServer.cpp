@@ -12,17 +12,12 @@ static String toString(uint64_t v)
 {
     String high;
 
-    Serial.printf("Converting %016llX to a string\n", v);
-
     if (v > 0xFFFFFFFF)
     {
-        Serial.println("Convering high part of uint64_t to string");
         high = String(static_cast<uint32_t>(v >> 32), 16);
     }
 
-    Serial.println("Convering low part of uint64_t to string");
     auto ret =  high + String(static_cast<uint32_t>(v & 0xFFFFFFFF), 16);
-    Serial.printf("Converted %016llX to a string \"%s\"\n", v, ret.c_str());
     return ret;
 }
 
@@ -159,6 +154,7 @@ void AlarmSystemWebServer::handleGetSensors() const
     StaticJsonDocument<512> doc;
     if (_alarmSystem.sensors().size() > 0)
     {
+        // TODO: Get array of arrays of obejcts?
         size_t i = 0;
         for (const auto& pair : _alarmSystem.sensors())
         {
@@ -192,6 +188,7 @@ void AlarmSystemWebServer::handleGetValidOperations() const
     }
     else
     {
+        // TODO: Get array of empty array?
         doc.createNestedArray();
     }
 

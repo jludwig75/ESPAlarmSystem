@@ -37,4 +37,5 @@ private:
     SwitchSensor _switchSensor;
     ESPNowClient _espNowClient;
     ESPDeepSleep _deepSleep;
+    SensorState::State _initialState;
 };

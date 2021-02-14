@@ -32,10 +32,6 @@ ContactSensorApp contactSensor(SENSOR_PIN, SSID, ESPNowClient::BroadCastAddress(
 
 void setup()
 {
-    //Init Serial Monitor
-    Serial.begin(115200);
-    delay(10);
-
     contactSensor.run();
 }
 

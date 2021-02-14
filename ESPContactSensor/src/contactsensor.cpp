@@ -54,6 +54,9 @@ void ContactSensorApp::run()
 bool ContactSensorApp::setup()
 {
     _switchSensor.begin();
+    _initialState = _switchSensor.currentState();
+
+    Serial.begin(115200);
 
     if (_deepSleep.wakeupOnTimer(SENOR_UPDATE_INTERVAL_MS * 1000) != ESP_OK)
     {
@@ -87,15 +90,30 @@ bool ContactSensorApp::reportState()
 
     SensorState myData;
     myData.wakeupReason = _deepSleep.wakeupCause();
-    myData.state = _switchSensor.currentState();
+    myData.state = _initialState;
     myData.vcc = ((float)rom_phy_get_vdd33()) / 1000;
-    esp_err_t result = _espNowClient.send((uint8_t *)&myData, sizeof(myData));
+    auto result = _espNowClient.send((uint8_t *)&myData, sizeof(myData));
     if (result != ESP_OK)
     {
         Serial.printf("Error %d sending the data\n", result);
         return false;
     }
-
     Serial.println("Sent with success");
+
+    if (_switchSensor.currentState() != _initialState)
+    {
+        Serial.println("Current sensor state does not match initial state. Sending update");
+        myData.wakeupReason = _deepSleep.wakeupCause();
+        myData.state = _switchSensor.currentState();
+        myData.vcc = ((float)rom_phy_get_vdd33()) / 1000;
+        auto result = _espNowClient.send((uint8_t *)&myData, sizeof(myData));
+        if (result != ESP_OK)
+        {
+            Serial.printf("Error %d sending the data\n", result);
+            return false;
+        }
+        Serial.println("Sent with success");
+    }
+
     return true;
 }
