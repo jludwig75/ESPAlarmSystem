@@ -76,11 +76,12 @@ AlarmSystemWebServer::AlarmSystemWebServer(AlarmSystem& alarmSystem)
     _alarmSystem(alarmSystem),
     _server(80)
 {
-
 }
 
 void AlarmSystemWebServer::begin()
 {
+    _server.serveStatic("/", SPIFFS, "/html/").setDefaultFile("index.html");;
+
     _server.on("/alarm_system/state", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetState(request); } );
     // This has to be before the following handler or that handler overrides this one.
     _server.on("^\\/alarm_system\\/sensor\\/(.+)$", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetSensor(request); } );
@@ -88,6 +89,7 @@ void AlarmSystemWebServer::begin()
     _server.on("/alarm_system/operation", HTTP_GET, [this](AsyncWebServerRequest *request) { handleGetValidOperations(request); } );
     _server.on("/alarm_system/operation", HTTP_POST, [this](AsyncWebServerRequest *request) { handlePostOperation(request); } );
     _server.begin();
+
     Serial.println("Web server started");
 }
 
