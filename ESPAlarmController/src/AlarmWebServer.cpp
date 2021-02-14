@@ -152,22 +152,17 @@ void AlarmSystemWebServer::handlePostOperation()
 void AlarmSystemWebServer::handleGetSensors() const
 {
     StaticJsonDocument<512> doc;
+    auto arrayObject = doc.to<JsonArray>();
     if (_alarmSystem.sensors().size() > 0)
     {
-        // TODO: Get array of arrays of obejcts?
-        size_t i = 0;
         for (const auto& pair : _alarmSystem.sensors())
         {
             const auto& sensor = pair.second;
-            auto sensorObj = doc[i++].createNestedObject();
+            auto sensorObj = arrayObject.createNestedObject();
             sensorObj["id"] = toString(sensor.id);
             sensorObj["state"] = toString(sensor.state);
             sensorObj["lastUpdate"] = sensor.lastUpdate;
         }
-    }
-    else
-    {
-        doc.createNestedArray();
     }
 
     String output;
@@ -178,18 +173,13 @@ void AlarmSystemWebServer::handleGetSensors() const
 void AlarmSystemWebServer::handleGetValidOperations() const
 {
     StaticJsonDocument<512> doc;
+    auto arrayObject = doc.to<JsonArray>();
     if (_alarmSystem.validOperations().size() > 0)
     {
-        size_t i = 0;
         for (const auto& operation : _alarmSystem.validOperations())
         {
-            doc[i++] = toString(operation);
+            arrayObject.add(toString(operation));
         }
-    }
-    else
-    {
-        // TODO: Get array of empty array?
-        doc.createNestedArray();
     }
 
     String output;
