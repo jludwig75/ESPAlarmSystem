@@ -13,7 +13,6 @@ public:
     void begin();
     void onLoop();
 private:
-    void handle_root() const;
     void handleGetState() const;
     void handleGetSensor() const;
     void handleGetSensors() const;

@@ -134,6 +134,11 @@ const SensorMap& AlarmSystem::sensors() const
 
 bool AlarmSystem::canArm() const
 {
+    if (_senors.empty())
+    {
+        return false;
+    }
+
     for (auto pair : _senors)
     {
         if (pair.second.state != SensorState::Closed)
@@ -161,6 +166,11 @@ bool AlarmSystem::arm()
     // TODO: Need to handle arming period
     _alarmState = State::Armed;
     Serial.println("Alarm system armed");
+    if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmArm))
+    {
+        Serial.println("ERROR: Failed to play armed sound");
+        // Don't fail operation
+    }
     return true;
 }
 

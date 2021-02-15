@@ -84,8 +84,6 @@ AlarmSystemWebServer::AlarmSystemWebServer(AlarmSystem& alarmSystem)
 
 void AlarmSystemWebServer::begin()
 {
-    _server.on("/", [this](){ handle_root(); });
-
     _server.on("/alarm_system/state", HTTP_GET, [this]() { handleGetState(); } );
     // This has to be before the following handler or that handler overrides this one.
     _server.on("/alarm_system/sensor/{}", HTTP_GET, [this]() { handleGetSensor(); } );
@@ -93,11 +91,15 @@ void AlarmSystemWebServer::begin()
     _server.on("/alarm_system/operation", HTTP_GET, [this]() { handleGetValidOperations(); } );
     _server.on("/alarm_system/operation", HTTP_POST, [this]() { handlePostOperation(); } );
 
-    _server.serveStatic("/", SPIFFS, "/html/");
+    // Handle these seperately, to make them immutable in the cache:
+    _server.serveStatic("/axios.min.js", SPIFFS, "/html/axios.min.js", "public, max-age=604800, immutable");
+    _server.serveStatic("/vue.global.js", SPIFFS, "/html/vue.global.js", "public, max-age=604800, immutable");
+
+    _server.serveStatic("/", SPIFFS, "/html/index.html", "public");
+    _server.serveStatic("/", SPIFFS, "/html/", "public");
 
     // TODO: Temporary for web development!
     _server.enableCORS();
-    _server.enableCrossOrigin();
 
     _server.begin();
 
@@ -108,20 +110,6 @@ void AlarmSystemWebServer::onLoop()
 {
     _server.handleClient();
 }
-
-
-void AlarmSystemWebServer::handle_root() const
-{
-    File webpage = SPIFFS.open("/html/index.html", "r");
-    if (!webpage)
-    {
-        Serial.println("Cannot load index.html");
-        return;
-    }
-
-    _server.streamFile(webpage, "text/html");
-}
-
 
 void AlarmSystemWebServer::handleGetState() const
 {
