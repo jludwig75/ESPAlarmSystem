@@ -140,9 +140,12 @@ void AlarmSystemWebServer::handlePostOperation(AsyncWebServerRequest *request)
 
 void AlarmSystemWebServer::handleGetSensors(AsyncWebServerRequest *request) const
 {
+    auto start = micros();
     Serial.println("handleGetSensors");
-    StaticJsonDocument<512> doc;
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    DynamicJsonDocument doc(512);
     auto arrayObject = doc.to<JsonArray>();
+    auto init = micros();
     if (_alarmSystem.sensors().size() > 0)
     {
         for (const auto& pair : _alarmSystem.sensors())
@@ -152,21 +155,31 @@ void AlarmSystemWebServer::handleGetSensors(AsyncWebServerRequest *request) cons
         }
     }
 
-    String output;
-    serializeJson(doc, output);
-    request->send(200, "application/json", output);
+    auto format = micros();
+
+    serializeJson(doc, *response);
+
+    auto serialize = micros();
+
+    request->send(response);
+
+    auto send = micros();
+    Serial.printf("handleGetSensors: init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu\n", init - start, format - init, serialize - format, send - serialize, send - start);
 }
 
 void AlarmSystemWebServer::handleGetSensor(AsyncWebServerRequest *request) const
 {
+    auto start = micros();
     auto sensorIdString = request->pathArg(0);
+    auto fetch = micros();
     uint64_t sensorId;
     if (!fromString(sensorIdString, sensorId))
     {
         request->send(400, "plain/text", "Invalid sensor ID: " + sensorIdString);
         return;
     }
-
+    auto parse = micros();
+    
     if (_alarmSystem.sensors().size() > 0)
     {
         for (const auto& pair : _alarmSystem.sensors())
@@ -174,26 +187,45 @@ void AlarmSystemWebServer::handleGetSensor(AsyncWebServerRequest *request) const
             const auto& sensor = pair.second;
             if (sensor.id == sensorId)
             {
-                StaticJsonDocument<512> doc;
+                AsyncResponseStream *response = request->beginResponseStream("application/json");
+                DynamicJsonDocument doc(128);
                 auto sensorObj = doc.to<JsonObject>();
+
+                auto init = micros();
+
                 sensorObj["id"] = toString(sensor.id);
                 sensorObj["state"] = toString(sensor.state);
                 sensorObj["lastUpdate"] = (millis() - sensor.lastUpdate) / 1000;
-                String output;
-                serializeJson(doc, output);
-                request->send(200, "application/json", output);
+
+                auto format = micros();
+
+                serializeJson(doc, *response);
+
+                auto serialize = micros();
+
+                request->send(response);
+
+                auto send = micros();
+                Serial.printf("handleGetSensor: fetch: %lu, parse: %lu, init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu\n", fetch - start, parse - fetch, init - parse, format - init, serialize - format, send - serialize, send - start);
                 return;
             }
         }
     }
+
 
     request->send(404, "plain/text", "Cannot find sensor " + sensorIdString);
 }
 
 void AlarmSystemWebServer::handleGetValidOperations(AsyncWebServerRequest *request) const
 {
-    StaticJsonDocument<512> doc;
+    auto start = micros();
+
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    DynamicJsonDocument doc(128);
     auto arrayObject = doc.to<JsonArray>();
+
+    auto init = micros();
+
     if (_alarmSystem.validOperations().size() > 0)
     {
         for (const auto& operation : _alarmSystem.validOperations())
@@ -202,7 +234,15 @@ void AlarmSystemWebServer::handleGetValidOperations(AsyncWebServerRequest *reque
         }
     }
 
-    String output;
-    serializeJson(doc, output);
-    request->send(200, "application/json", output);
+    auto format = micros();
+
+    serializeJson(doc, *response);
+
+    auto serialize = micros();
+
+    request->send(response);
+
+    auto send = micros();
+
+    Serial.printf("handleGetValidOperations: init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu\n", init - start, format - init, serialize - format, send - serialize, send - start);
 }
