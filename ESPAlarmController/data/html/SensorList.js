@@ -72,7 +72,7 @@ app.component('sensor-list-view', {
     },
     mounted() {
         this.getSensors();
-        this.polling = setInterval(this.getSensors, 5000);
+        this.polling = setInterval(this.getSensors, 1000);
     },
     beforeUnmount() {
         clearInterval(this.polling);

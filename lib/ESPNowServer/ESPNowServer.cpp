@@ -35,6 +35,7 @@ bool ESPNowServer::begin()
     
     // Set device as a Wi-Fi Station
     WiFi.begin(_apSSID.c_str(), _apPassword.c_str());
+    WiFi.setSleep(false);
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(1000);

@@ -67,7 +67,7 @@ app.component('alarm-system-view', {
     },
     mounted() {
         this.refreshBackendData();
-        this.polling = setInterval(this.refreshBackendData, 5000);
+        this.polling = setInterval(this.refreshBackendData, 1000);
     },
     beforeUnmount() {
         clearInterval(this.polling);

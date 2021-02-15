@@ -31,6 +31,7 @@ AlarmSystem alarmSystem(SSID, SSID_PASSWORD, 26, 25, 22);
 void setup()
 {
     Serial.begin(115200);
+    // Serial.setDebugOutput(true);
     delay(10);
 
     if (!alarmSystem.begin())
