@@ -2,7 +2,7 @@ app.component('sensor-list-view', {
     template:
     /*html*/
     `
-    <div class="display-group">
+<div class="display-group">
     <fieldset>
         <legend>Alarm Sensors</legend>
         <table>
