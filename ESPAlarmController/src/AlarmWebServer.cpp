@@ -69,6 +69,9 @@ AlarmSystem::Operation operationFromString(const String& str)
     return AlarmSystem::Operation::Invalid;
 }
 
+unsigned inflightHandlerCount = 0;
+unsigned handlerCallCount = 0;
+
 }
 
 AlarmSystemWebServer::AlarmSystemWebServer(AlarmSystem& alarmSystem)
@@ -98,7 +101,14 @@ void AlarmSystemWebServer::begin()
 
 void AlarmSystemWebServer::handleGetState(AsyncWebServerRequest *request) const
 {
+    auto callId = handlerCallCount++;
+    inflightHandlerCount++;
+    Serial.printf("ENTER[%u]: handleGetState, %u\n", callId, inflightHandlerCount);
+
     request->send(200, "text/plain", toString(_alarmSystem.state()));
+
+    inflightHandlerCount--;
+    Serial.printf("EXIT [%u]: handleGetState, %u\n", callId, inflightHandlerCount);
 }
 
 void AlarmSystemWebServer::handlePostOperation(AsyncWebServerRequest *request)
@@ -140,8 +150,12 @@ void AlarmSystemWebServer::handlePostOperation(AsyncWebServerRequest *request)
 
 void AlarmSystemWebServer::handleGetSensors(AsyncWebServerRequest *request) const
 {
+    auto callId = handlerCallCount++;
+
+    inflightHandlerCount++;
+    Serial.printf("ENTER[%u]: handleGetSensors, %u\n", callId, inflightHandlerCount);
+
     auto start = micros();
-    Serial.println("handleGetSensors");
     AsyncResponseStream *response = request->beginResponseStream("application/json");
     DynamicJsonDocument doc(512);
     auto arrayObject = doc.to<JsonArray>();
@@ -165,10 +179,18 @@ void AlarmSystemWebServer::handleGetSensors(AsyncWebServerRequest *request) cons
 
     auto send = micros();
     Serial.printf("handleGetSensors: init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu\n", init - start, format - init, serialize - format, send - serialize, send - start);
+
+    inflightHandlerCount--;
+    Serial.printf("EXIT [%u]: handleGetSensors, %u\n", callId, inflightHandlerCount);
 }
 
 void AlarmSystemWebServer::handleGetSensor(AsyncWebServerRequest *request) const
 {
+    auto callId = handlerCallCount++;
+
+    inflightHandlerCount++;
+    Serial.printf("ENTER[%u]: handleGetSensor, %u\n", callId, inflightHandlerCount);
+
     auto start = micros();
     auto sensorIdString = request->pathArg(0);
     auto fetch = micros();
@@ -176,6 +198,9 @@ void AlarmSystemWebServer::handleGetSensor(AsyncWebServerRequest *request) const
     if (!fromString(sensorIdString, sensorId))
     {
         request->send(400, "plain/text", "Invalid sensor ID: " + sensorIdString);
+
+        inflightHandlerCount--;
+        Serial.printf("EXIT [%u]: handleGetSensor, %u\n", callId, inflightHandlerCount);
         return;
     }
     auto parse = micros();
@@ -207,6 +232,9 @@ void AlarmSystemWebServer::handleGetSensor(AsyncWebServerRequest *request) const
 
                 auto send = micros();
                 Serial.printf("handleGetSensor: fetch: %lu, parse: %lu, init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu\n", fetch - start, parse - fetch, init - parse, format - init, serialize - format, send - serialize, send - start);
+
+                inflightHandlerCount--;
+                Serial.printf("EXIT [%u]: handleGetSensor, %u\n", callId, inflightHandlerCount);
                 return;
             }
         }
@@ -214,10 +242,18 @@ void AlarmSystemWebServer::handleGetSensor(AsyncWebServerRequest *request) const
 
 
     request->send(404, "plain/text", "Cannot find sensor " + sensorIdString);
+
+    inflightHandlerCount--;
+    Serial.printf("EXIT [%u]: handleGetSensor, %u\n", callId, inflightHandlerCount);
 }
 
 void AlarmSystemWebServer::handleGetValidOperations(AsyncWebServerRequest *request) const
 {
+    auto callId = handlerCallCount++;
+
+    inflightHandlerCount++;
+    Serial.printf("ENTER[%u]: handleGetValidOperations, %u\n", callId, inflightHandlerCount);
+
     auto start = micros();
 
     AsyncResponseStream *response = request->beginResponseStream("application/json");
@@ -245,4 +281,7 @@ void AlarmSystemWebServer::handleGetValidOperations(AsyncWebServerRequest *reque
     auto send = micros();
 
     Serial.printf("handleGetValidOperations: init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu\n", init - start, format - init, serialize - format, send - serialize, send - start);
+
+    inflightHandlerCount--;
+    Serial.printf("EXIT [%u]: handleGetValidOperations, %u\n", callId, inflightHandlerCount);
 }
