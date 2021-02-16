@@ -58,7 +58,7 @@ bool ContactSensorApp::setup()
 
     Serial.begin(115200);
 
-    if (_deepSleep.wakeupOnTimer(SENOR_UPDATE_INTERVAL_MS * 1000) != ESP_OK)
+    if (_deepSleep.wakeupOnTimer(SENSOR_UPDATE_INTERVAL_MS * 1000) != ESP_OK)
     {
         return false;
     }

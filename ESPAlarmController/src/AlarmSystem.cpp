@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <Logging.h>
 #include <WiFi.h>
+#include <time.h>
 
 #include <alarm_config.h>
 #include "protocol.h"
@@ -39,6 +40,59 @@ AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bcl
 
 bool AlarmSystem::begin()
 {
+    loadPersistedState();
+
+    loadAlarmSensorsFromDb();
+
+    if (!_soundPlayer.begin())
+    {
+        log_e("Failed to start sound player");
+        return false;
+    }
+
+    if (!_eSPNowServer.begin())
+    {
+        log_e("Failed to start ESP-NOW server");
+        return false;
+    }
+
+    log_a("Initializing web server");
+    _webServer.begin();
+
+    initTime();
+
+    return true;
+}
+
+void AlarmSystem::loadAlarmSensorsFromDb()
+{
+    log_a("Initializing sensor database");
+    if (!_sensorDb.begin())
+    {
+        log_e("Failed to sensor database");
+        // Still keep running
+        return;
+    }
+
+    SensorList sensors;
+    if (!_sensorDb.getAlarmSensors(sensors))
+    {
+        log_e("Failed to load sensors from sensor database");
+        // Still keep running
+        return;
+    }
+
+    log_a("Alarm sensors loaded from sensor DB:");
+    for (const auto& sensor : sensors)
+    {
+        log_a("  %016llX", sensor.id);
+        _senors[sensor.id] = sensor;
+    }
+    log_a("end of loaded alarm sensor list");
+}
+
+void AlarmSystem::loadPersistedState()
+{
     log_a("Loading persisted alarm state...");
     if (!_flashState.begin())
     {
@@ -66,45 +120,22 @@ bool AlarmSystem::begin()
             break;
         }
     }
+}
 
-    log_a("Initializing sensor database");
-    if (!_sensorDb.begin())
+void AlarmSystem::initTime()
+{
+    // Need a delay before getting the time.
+    delay(500);
+    configTime(TZ_OFFSET, DAYLIGHT_OFFSET, "pool.ntp.org", "time.nist.gov", "0.pool.ntp.org");
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo))
     {
-        log_e("Failed to sensor database");
-        return false;
+        log_e("Failed to get local time");
     }
-
-    SensorList sensors;
-    if (!_sensorDb.getAlarmSensors(sensors))
+    else
     {
-        log_e("Failed to load sensors from sensor database");
-        return false;
+        Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
     }
-
-    log_i("Alarm sensors loaded from sensor DB:");
-    for (const auto& sensor : sensors)
-    {
-        log_i("  %016llX", sensor.id);
-        _senors[sensor.id] = sensor;
-    }
-    log_i("end of loaded alarm sensor list");
-
-    if (!_soundPlayer.begin())
-    {
-        log_e("Failed to start sound player");
-        return false;
-    }
-
-    if (!_eSPNowServer.begin())
-    {
-        log_e("Failed to start ESP-NOW server");
-        return false;
-    }
-
-    log_a("Initializing web server");
-    _webServer.begin();
-
-    return true;
 }
 
 void AlarmSystem::onLoop()

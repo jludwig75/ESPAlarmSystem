@@ -43,6 +43,9 @@ private:
     // TODO: The nex two methods need to be moved to a policy class:
     void handleSensorState(AlarmSensor& sensor, SensorState::State newState);
     void checkSensors();
+    void loadAlarmSensorsFromDb();
+    void loadPersistedState();
+    void initTime();
     SensorDataBase _sensorDb;
     ESPNowServer _eSPNowServer;
     SoundPlayer _soundPlayer;

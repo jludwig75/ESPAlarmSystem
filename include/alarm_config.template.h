@@ -5,10 +5,10 @@
 
 #define SENSOR_PIN   GPIO_NUM_4
 
-#define SSID            "Caradhras"
-#define SSID_PASSWORD   "Speak friend."
+#define SSID            "SSID"
+#define SSID_PASSWORD   "SSID PASSWORD"
 
-#define BROADCAST_ADDRESS   {0x30, 0xAE, 0xA4, 0x04, 0x3E, 0x08}
+#define BROADCAST_ADDRESS   {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC}
 
 #define SENSOR_UPDATE_INTERVAL_MS               (30 * 1000)     // 30 seconds
 #define MAX_SENSOR_UPDATE_TIMEOUT_DISARMED_MS   (2 * 60 * 1000) // 2 minutes
