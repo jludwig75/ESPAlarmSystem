@@ -1,5 +1,7 @@
 #include "WavFilePlayer.h"
 
+#include <Logging.h>
+
 
 WavFilePlayer::WavFilePlayer(int bclkPin, int wclkPin, int doutPin)
     :
@@ -14,19 +16,19 @@ bool WavFilePlayer::begin()
 {
     if(!SPIFFS.begin())
     {
-        Serial.println("ERROR: SPIFFS Mount Failed");
+        log_e("SPIFFS Mount Failed");
         return false;
     }
 
     if (!_output.SetGain(4))
     {
-        Serial.println("ERROR: Failed to set ouput gain");
+        log_e("Failed to set ouput gain");
         return false;
     }
 
     if (!_output.SetPinout(_bclkPin, _wclkPin, _doutPin))
     {
-        Serial.println("ERROR: Failed to set ouput pins");
+        log_e("Failed to set ouput pins");
         return false;
     }
 
@@ -35,7 +37,7 @@ bool WavFilePlayer::begin()
 
 bool WavFilePlayer::playWavFile(const String& wavFileName)
 {
-    Serial.printf("Playing WAV file \"%s\"\n", wavFileName.c_str());
+    log_a("Playing WAV file \"%s\"", wavFileName.c_str());
 
     // Stop any audio currently playing 
     silence();
@@ -43,13 +45,13 @@ bool WavFilePlayer::playWavFile(const String& wavFileName)
     _inputFile = new AudioFileSourceSPIFFS(wavFileName.c_str());
     if (_inputFile == nullptr)
     {
-        Serial.println("ERROR: Failed to allocate input file");
+        log_e("Failed to allocate input file");
         return false;
     }
     
     if (!_wav.begin(_inputFile, &_output))
     {
-        Serial.println("ERROR: Failed to start WAV audio generator");
+        log_e("Failed to start WAV audio generator");
         return false;
     }
 
@@ -65,13 +67,13 @@ void WavFilePlayer::silence()
 {
     if (_inputFile)
     {
-        Serial.println("checking wave");
+        log_i("checking wave");
         if (_wav.isRunning())
         {
-            Serial.println("stopping wave");
+            log_i("stopping wave");
             _wav.stop();
         }
-        Serial.println("deleting input file");
+        log_i("deleting input file");
         auto* t = _inputFile;
         _inputFile = nullptr;
         delete t;
@@ -93,7 +95,7 @@ void WavFilePlayer::onLoop()
             }
             else
             {
-                Serial.println("UNEXPECTED: input file is NULL");
+                log_e("UNEXPECTED: input file is NULL");
             }
         }
     }

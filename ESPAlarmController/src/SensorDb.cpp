@@ -1,6 +1,7 @@
 #include "SensorDb.h"
 
 #include <ArduinoJson.h>
+#include <Logging.h>
 #include <SPIFFS.h>
 
 
@@ -22,17 +23,17 @@ bool SensorDataBase::begin()
 {
     if(!SPIFFS.begin())
     {
-        Serial.println("ERROR: SPIFFS Mount Failed");
+        log_e("SPIFFS Mount Failed");
         return false;
     }
 
     // Create a DB file if one does not yet exist
     if (!SPIFFS.exists(sensorDbFileName))
     {
-        Serial.println("Creating initial sensor datbase file");
+        log_a("Creating initial sensor datbase file");
         if (!writeDbFile({}))
         {
-            Serial.println("ERROR: Failed to create initial sensor datbase file");
+            log_e("Failed to create initial sensor datbase file");
             return false;
         }
     }
@@ -51,14 +52,14 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
         dbFile.close();
         if (error)
         {
-            Serial.println("ERROR: Failed to parse sensor DB file");
+            log_e("Failed to parse sensor DB file");
             return false;
         }
 
         // load the list
         if (!doc.containsKey("sensors"))
         {
-            Serial.println("ERROR: Sensor database file has no \"sensors\" key\n");
+            log_e("Sensor database file has no \"sensors\" key");
             return false;
         }
         auto sensorList = doc["sensors"].as<JsonArray>();
@@ -66,14 +67,14 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
         {
             if (!sensor.containsKey("id"))
             {
-                Serial.println("ERROR: Sensor database file sensor object has no \"id\" key\n");
+                log_e("Sensor database file sensor object has no \"id\" key");
                 return false;
             }
             auto idString = sensor["id"].as<String>();
             uint64_t id;
             if (!fromString(idString, id))
             {
-                Serial.printf("ERROR: Failed to parse sensor ID: \"%s\" is not a hexidecimal string\n", idString.c_str());
+                log_e("Failed to parse sensor ID: \"%s\" is not a hexidecimal string", idString.c_str());
                 return false;
             }
             _sensors.push_back(AlarmSensor(id, SensorState::Unknown));
@@ -102,7 +103,7 @@ bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
 
     if (!writeDbFile(sensorList))
     {
-        Serial.println("ERROR: Failed to write sensor list to file");
+        log_e("Failed to write sensor list to file");
         return false;
     }
 
@@ -116,7 +117,7 @@ bool SensorDataBase::writeDbFile(const SensorList& sensors)
     auto dbFile = SPIFFS.open(sensorDbFileName, FILE_WRITE);
     if (!dbFile)
     {
-        Serial.println("ERROR: Failed to create sensor database file");
+        log_e("Failed to create sensor database file");
         return false;
     }
 

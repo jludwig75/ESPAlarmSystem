@@ -1,6 +1,7 @@
 #include "AlarmSystem.h"
 
 #include <Arduino.h>
+#include <Logging.h>
 #include <WiFi.h>
 
 #include <alarm_config.h>
@@ -38,41 +39,41 @@ AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bcl
 
 bool AlarmSystem::begin()
 {
-    Serial.println("Imnitializing sensor database");
+    log_a("Initializing sensor database");
     if (!_sensorDb.begin())
     {
-        Serial.println("ERROR: Failed to sensor database");
+        log_e("Failed to sensor database");
         return false;
     }
 
     SensorList sensors;
     if (!_sensorDb.getAlarmSensors(sensors))
     {
-        Serial.println("ERROR: Failed to load sensors from sensor database");
+        log_e("Failed to load sensors from sensor database");
         return false;
     }
 
-    Serial.println("Alarm sensors loaded from sensor DB:");
+    log_i("Alarm sensors loaded from sensor DB:");
     for (const auto& sensor : sensors)
     {
-        Serial.printf("  %016llX\n", sensor.id);
+        log_i("  %016llX", sensor.id);
         _senors[sensor.id] = sensor;
     }
-    Serial.println("end of loaded alarm sensor list");
+    log_i("end of loaded alarm sensor list");
 
     if (!_soundPlayer.begin())
     {
-        Serial.println("ERROR: Failed to start sound player");
+        log_e("Failed to start sound player");
         return false;
     }
 
     if (!_eSPNowServer.begin())
     {
-        Serial.println("ERROR: Failed to start ESP-NOW server");
+        log_e("Failed to start ESP-NOW server");
         return false;
     }
 
-    Serial.println("Initializing web server");
+    log_a("Initializing web server");
     _webServer.begin();
 
     return true;
@@ -90,10 +91,10 @@ void AlarmSystem::onLoop()
         {
             if (!_soundPlayer.soundPlaying())
             {
-                Serial.println("ALARM: Resounding alarm!");
+                log_a("ALARM: Resounding alarm!");
                 if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmSouding))
                 {
-                    Serial.println("ERROR: Failed to play sound");
+                    log_e("Failed to play sound");
                 }
             }
         }
@@ -159,16 +160,16 @@ bool AlarmSystem::arm()
 
     if (!canArm())
     {
-        Serial.println("Alarm syste cannot be armed now");
+        log_w("Alarm system cannot be armed now");
         return false;
     }
 
     // TODO: Need to handle arming period
     _alarmState = State::Armed;
-    Serial.println("Alarm system armed");
+    log_a("Alarm system armed");
     if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmArm))
     {
-        Serial.println("ERROR: Failed to play armed sound");
+        log_e("Failed to play armed sound");
         // Don't fail operation
     }
     return true;
@@ -182,10 +183,10 @@ void AlarmSystem::disarm()
     }
 
     _alarmState = State::Disarmed;
-    Serial.println("Alarm system disarmed");
+    log_a("Alarm system disarmed");
     if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmDisarm))
     {
-        Serial.println("ERROR: Failed to play disarm sound");
+        log_e("Failed to play disarm sound");
 
     }
 }
@@ -194,17 +195,17 @@ void AlarmSystem::disarm()
 void AlarmSystem::onDataReceive(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 {
     uint64_t sensorId = macAddressToId(mac_addr);
-    Serial.printf("Received data from sensor %016llX: %d bytes\n", sensorId, len);
+    log_i("Received data from sensor %016llX: %d bytes", sensorId, len);
 
     SensorState sensorState;
     if (len < sizeof(sensorState))
     {
-        Serial.printf("ERROR: Recevied data is too small: %d bytes, %u expected\n", len, sizeof(sensorState));
+        log_e("Recevied data is too small: %d bytes, %u expected", len, sizeof(sensorState));
         return;
     }
 
     memcpy(&sensorState, incomingData, sizeof(sensorState));
-    Serial.printf("Sensor %016llX state: wakeup reason: \"%s\", state: %s, vcc: %.2f, @ %.3f\n",
+    log_a("Sensor %016llX state: wakeup reason: \"%s\", state: %s, vcc: %.2f, @ %.3f",
                   sensorId,
                   SensorState::wakeupReasontoString(sensorState.wakeupReason),
                   SensorState::toString(sensorState.state),
@@ -219,16 +220,16 @@ void AlarmSystem::updateSensorState(uint64_t sensorId, SensorState::State newSta
     auto it = _senors.find(sensorId);
     if (it == _senors.end())
     {
-        Serial.printf("New sensor: %016llX\n", sensorId);
+        log_a("New sensor: %016llX", sensorId);
 
         _senors[sensorId] = AlarmSensor(sensorId, newState);
         it = _senors.find(sensorId);
         assert(it != _senors.end());
 
-        Serial.printf("Storing sensor to DB: %016llX\n", sensorId);
+        log_i("Storing sensor to DB: %016llX", sensorId);
         if (!_sensorDb.storeSensor(_senors[sensorId]))
         {
-            Serial.printf("ERROR: Failed to store sensor %016llX to sensor database\n", sensorId);
+            log_e("Failed to store sensor %016llX to sensor database", sensorId);
             // Keep running.
         }
     }
@@ -249,14 +250,14 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
         {
             if (!_soundPlayer.playSound(SoundPlayer::Sound::SensorChimeOpened))
             {
-                Serial.println("ERROR: Failed to play sound");
+                log_e("Failed to play sound");
             }
         }
         else if (sensor.state != SensorState::Closed && newState == SensorState::Closed && sensor.lastUpdate > 0)
         {
             if (!_soundPlayer.playSound(SoundPlayer::Sound::SensorChimeClosed))
             {
-                Serial.println("ERROR: Failed to play sound");
+                log_e("Failed to play sound");
             }
         }
         else if (newState == SensorState::Fault)
@@ -265,7 +266,7 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
             {
                 if (!_soundPlayer.playSound(SoundPlayer::Sound::SensorFault))
                 {
-                    Serial.println("ERROR: Failed to play sound");
+                    log_e("Failed to play sound");
                 }
                 else
                 {
@@ -279,14 +280,14 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
         switch (newState)
         {
         case SensorState::Fault:
-            Serial.printf("ALARM: sensor %016llX fault! Handling as opened!\n", sensor.id);
+            log_a("ALARM: sensor %016llX fault! Handling as opened!", sensor.id);
             // Fall through and sound the alarm
         case SensorState::Open:
-            Serial.printf("ALARM: sensor %016llX has been opened!\n", sensor.id);
+            log_a("ALARM: sensor %016llX has been opened!", sensor.id);
             _alarmState = State::AlarmTriggered;
             if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmSouding))
             {
-                Serial.println("ERROR: Failed to play sound");
+                log_e("Failed to play sound");
             }
         default:
             break;
@@ -303,24 +304,24 @@ void AlarmSystem::checkSensors()
         auto timeout = _alarmState == State::Armed ? MAX_SENSOR_UPDATE_TIMEOUT_ARMED_MS : MAX_SENSOR_UPDATE_TIMEOUT_DISARMED_MS;
         if (timeSinceLastUpdate > timeout)
         {
-            Serial.printf("FAULT: Sensor %016llX has not updated in over %lu seconds\n", sensor.id, timeSinceLastUpdate / 1000);
+            log_a("FAULT: Sensor %016llX has not updated in over %lu seconds", sensor.id, timeSinceLastUpdate / 1000);
 
             switch (_alarmState)
             {
             case State::Arming:
-                Serial.println("FAULT: Alarm currently arming. Cancelling arming");
+                log_a("FAULT: Alarm currently arming. Cancelling arming");
                 // TODO: Make extra sure this gets reported in the UI and play the fault sound
                 // Cancel the arming sound
                 _soundPlayer.silence();
                 _alarmState = State::Disarmed;
-                Serial.println("FAULT: Alarm disarmed");
+                log_a("FAULT: Alarm disarmed");
                 /* Fall through */
             case State::Disarmed:
                 if (millis() - sensor.faultLastHandled > SENSOR_FAULT_CHIME_INTERVAL_MS)
                 {
                     if (!_soundPlayer.playSound(SoundPlayer::Sound::SensorFault))
                     {
-                        Serial.println("ERROR: Failed to play sound");
+                        log_e("Failed to play sound");
                     }
                     else
                     {
@@ -330,11 +331,11 @@ void AlarmSystem::checkSensors()
                 break;
             case State::Armed:
                 // TODO: Should we sound the alarm in this case? I think so, but maybe just play the fault sound?
-                Serial.println("ALARM: Sounding alarm!!");
+                log_a("ALARM: Sounding alarm!!");
                 _alarmState = State::AlarmTriggered;
                 if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmSouding))
                 {
-                    Serial.println("ERROR: Failed to play sound");
+                    log_e("Failed to play sound");
                 }
                 break;
             case State::AlarmTriggered:
@@ -345,12 +346,12 @@ void AlarmSystem::checkSensors()
         {
             if (sensor.state == SensorState::Fault && _alarmState == State::Disarmed)
             {
-                Serial.printf("FAULT: Sensor %016llX fault\n", sensor.id);
+                log_a("FAULT: Sensor %016llX fault", sensor.id);
                 if (millis() - sensor.faultLastHandled > SENSOR_FAULT_CHIME_INTERVAL_MS)
                 {
                     if (!_soundPlayer.playSound(SoundPlayer::Sound::SensorFault))
                     {
-                        Serial.println("ERROR: Failed to play sound");
+                        log_e("Failed to play sound");
                     }
                     else
                     {

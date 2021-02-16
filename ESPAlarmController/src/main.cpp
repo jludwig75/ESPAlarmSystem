@@ -36,14 +36,14 @@ void setup()
 
     if (!alarmSystem.begin())
     {
-        Serial.println("ERROR: Failed to start alarm system. Restarting in 5 seconds...");
+        log_e("Failed to start alarm system. Restarting in 5 seconds...");
         delay(5000);
         ESP.restart();
     }
 
     // if (!alarmSystem.arm())
     // {
-    //     Serial.println("Failed to arm alarm system");
+    //     log_e("Failed to arm alarm system");
     // }
 }
 

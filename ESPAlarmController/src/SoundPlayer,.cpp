@@ -29,10 +29,10 @@ String SoundPlayer::toFileName(Sound sound)
         return "/A_SOUND.WAV";
     case Sound::Silence:
         // This alarm system code should never request to play this sound
-        Serial.println("ERROR: Invalid request to play silence\n");
+        log_e("Invalid request to play silence");
         return String();
     default:
-        Serial.printf("ERROR: Request to play invalid sound %u\n", static_cast<unsigned>(sound));
+        log_e("Request to play invalid sound %u", static_cast<unsigned>(sound));
         return String();
     }
 }
@@ -47,7 +47,7 @@ bool SoundPlayer::begin()
 {
     if (!_wavFilePlayer.begin())
     {
-        Serial.println("ERROR: Failed to start WAV file player");
+        log_e("Failed to start WAV file player");
         return false;
     }
 
@@ -65,7 +65,7 @@ bool SoundPlayer::playSound(Sound sound)
     auto soundFileName = toFileName(sound);
     if (soundFileName.isEmpty())
     {
-        Serial.printf("No sound file for sound %u\n", static_cast<unsigned>(sound));
+        log_e("No sound file for sound %u", static_cast<unsigned>(sound));
         return false;
     }
 

@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <esp_now.h>
+#include <Logging.h>
 #include <WiFi.h>
 
 
@@ -16,7 +17,7 @@ ESPNowServer::ESPNowServer(const String& apSSID, const String& apPassword, OnRec
     assert(_this == nullptr);
     if (_this != nullptr)
     {
-        Serial.println("ERROR: Already created ESPNowServer singleton");
+        log_e("Already created ESPNowServer singleton");
     }
 
     _this = this;
@@ -24,12 +25,11 @@ ESPNowServer::ESPNowServer(const String& apSSID, const String& apPassword, OnRec
 
 bool ESPNowServer::begin()
 {
-    Serial.print("ESP Board MAC Address:  ");
-    Serial.println(WiFi.macAddress());
+    log_a("ESP Board MAC Address: %s", WiFi.macAddress().c_str());
     // Set the device as a Station and Soft Access Point simultaneously
     if (!WiFi.mode(WIFI_AP_STA))
     {
-        Serial.println("ERROR: Failed to set WIFI mode to WIFI_AP_STA");
+        log_e("Failed to set WIFI mode to WIFI_AP_STA");
         return false;
     }
     
@@ -39,17 +39,15 @@ bool ESPNowServer::begin()
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(1000);
-        Serial.println("Setting as a Wi-Fi Station..");
+        log_a("Setting as a Wi-Fi Station..");
     }
-    Serial.print("Station IP Address: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("Wi-Fi Channel: ");
-    Serial.println(WiFi.channel());
+    log_a("Station IP Address: %s", WiFi.localIP().toString().c_str());
+    log_a("Wi-Fi Channel: %d", WiFi.channel());
 
     // Init ESP-NOW
     if (esp_now_init() != ESP_OK)
     {
-        Serial.println("Error initializing ESP-NOW");
+        log_e("Error initializing ESP-NOW");
         return false;
     }
     
@@ -58,7 +56,7 @@ bool ESPNowServer::begin()
     auto ret = esp_now_register_recv_cb(onDataRecv);
     if (ret != ESP_OK)
     {
-        Serial.printf("ERROR %d setting on-receive callback\n", ret);
+        log_e("ERROR %d setting on-receive callback", ret);
         return false;
     }
 
@@ -70,7 +68,7 @@ void ESPNowServer::onDataRecv(const uint8_t * mac_addr, const uint8_t *incomingD
     assert(_this != nullptr);
     if (_this == nullptr)
     {
-        Serial.println("ERROR: ESPNowServer singleton not created");
+        log_e("ESPNowServer singleton not created");
         return;
     }
 
