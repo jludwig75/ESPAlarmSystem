@@ -1,5 +1,6 @@
 #pragma once
 
+#include <AlarmPersistentState.h>
 #include <AlarmWebServer.h>
 #include <SensorDb.h>
 #include <ESPNowServer.h>
@@ -46,6 +47,7 @@ private:
     ESPNowServer _eSPNowServer;
     SoundPlayer _soundPlayer;
     AlarmSystemWebServer _webServer;
+    AlarmPersistentState _flashState;
     SensorMap _senors;    // Well slap me! I used and STL container in FW code!
     State _alarmState;
     unsigned long _lastCheck;

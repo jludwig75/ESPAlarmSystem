@@ -39,6 +39,34 @@ AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bcl
 
 bool AlarmSystem::begin()
 {
+    log_a("Loading persisted alarm state...");
+    if (!_flashState.begin())
+    {
+        log_e("Failed to load alarm persistent state file");
+        // Don't fail
+    }
+    else
+    {
+        switch (_flashState.get())
+        {
+        case AlarmPersistentState::AlarmState::Disarmed:
+            log_a("Persisted alarm state: Disarmed");
+            _alarmState = State::Disarmed;
+            break;
+        case AlarmPersistentState::AlarmState::Armed:
+            log_a("Persisted alarm state: Armed");
+            _alarmState = State::Armed;
+            break;
+        case AlarmPersistentState::AlarmState::Triggerd:
+            log_a("ALARM: Persisted alarm state: Triggered. Resounding alarm");
+            _alarmState = State::AlarmTriggered;
+            break;
+        default:
+            log_d("Persisted alarm state: %u", _flashState.get());
+            break;
+        }
+    }
+
     log_a("Initializing sensor database");
     if (!_sensorDb.begin())
     {
@@ -172,6 +200,13 @@ bool AlarmSystem::arm()
         log_e("Failed to play armed sound");
         // Don't fail operation
     }
+    log_a("Persisting alarm state as armed");
+    if (!_flashState.set(AlarmPersistentState::AlarmState::Armed))
+    {
+        log_e("Failed to persist alarm state!");
+        // Don't fail.
+        // TODO: Somehow let the user know this. This should be shown in the web UI.
+    }
     return true;
 }
 
@@ -188,6 +223,13 @@ void AlarmSystem::disarm()
     {
         log_e("Failed to play disarm sound");
 
+    }
+    log_a("Persisting alarm state as disarmed");
+    if (!_flashState.set(AlarmPersistentState::AlarmState::Disarmed))
+    {
+        log_e("Failed to persist alarm state!");
+        // Don't fail.
+        // TODO: Somehow let the user know this. This should be shown in the web UI.
     }
 }
 
@@ -288,6 +330,13 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
             if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmSouding))
             {
                 log_e("Failed to play sound");
+            }
+            log_a("Persisting alarm state as triggered");
+            if (!_flashState.set(AlarmPersistentState::AlarmState::Triggerd))
+            {
+                log_e("Failed to persist alarm state!");
+                // Don't fail.
+                // TODO: Somehow let the user know this. This should be shown in the web UI.
             }
         default:
             break;
