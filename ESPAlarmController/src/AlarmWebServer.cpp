@@ -70,10 +70,6 @@ AlarmSystem::Operation operationFromString(const String& str)
     return AlarmSystem::Operation::Invalid;
 }
 
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-unsigned inflightHandlerCount = 0;
-unsigned handlerCallCount = 0;
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
 }
 
 AlarmSystemWebServer::AlarmSystemWebServer(AlarmSystem& alarmSystem)
@@ -88,6 +84,7 @@ void AlarmSystemWebServer::begin()
     _server.on("/alarm_system/state", HTTP_GET, [this]() { handleGetState(); } );
     // This has to be before the following handler or that handler overrides this one.
     _server.on("/alarm_system/sensor/{}", HTTP_GET, [this]() { handleGetSensor(); } );
+    _server.on("/alarm_system/sensor/{}", HTTP_PUT, [this]() { handleUpdateSensor(); } );
     _server.on("/alarm_system/sensor", HTTP_GET, [this]() { handleGetSensors(); } );
     _server.on("/alarm_system/operation", HTTP_GET, [this]() { handleGetValidOperations(); } );
     _server.on("/alarm_system/operation", HTTP_POST, [this]() { handlePostOperation(); } );
@@ -114,25 +111,14 @@ void AlarmSystemWebServer::onLoop()
 
 void AlarmSystemWebServer::handleGetState() const
 {
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto callId = handlerCallCount++;
-    inflightHandlerCount++;
-    log_d("ENTER[%u]: handleGetState, %u", callId, inflightHandlerCount);
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
     _server.send(200, "text/plain", toString(_alarmSystem.state()));
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    inflightHandlerCount--;
-    log_d("EXIT [%u]: handleGetState, %u", callId, inflightHandlerCount);
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
 }
 
 void AlarmSystemWebServer::handlePostOperation()
 {
     if (!_server.hasArg("operation"))
     {
-        _server.send(400, "plain/text", "No operation specified");
+        _server.send(400, "text/plain", "No operation specified");
         return;
     }
 
@@ -143,13 +129,13 @@ void AlarmSystemWebServer::handlePostOperation()
     case AlarmSystem::Operation::Arm:
         if (!_alarmSystem.canArm())
         {
-            _server.send(405, "plain/text", "Alarm system cannot be armed. Sensors opened or faulted");
+            _server.send(405, "text/plain", "Alarm system cannot be armed. Sensors opened or faulted");
             return;
         }
 
         if (!_alarmSystem.arm())
         {
-            _server.send(500, "plain/text", "Failed to arm alarm system");
+            _server.send(500, "text/plain", "Failed to arm alarm system");
             return;
         }
 
@@ -160,26 +146,15 @@ void AlarmSystemWebServer::handlePostOperation()
         _server.send(200, "text/plain", "OK");
         return;
     default:
-        _server.send(400, "plain/text", "Invalid operation specified: " + operationString);
+        _server.send(400, "text/plain", "Invalid operation specified: " + operationString);
         return;
     }
 }
 
 void AlarmSystemWebServer::handleGetSensors() const
 {
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto callId = handlerCallCount++;
-
-    inflightHandlerCount++;
-    log_d("ENTER[%u]: handleGetSensors, %u", callId, inflightHandlerCount);
-
-    auto start = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
     DynamicJsonDocument doc(512);
     auto arrayObject = doc.to<JsonArray>();
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto init = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
     if (_alarmSystem.sensors().size() > 0)
     {
         for (const auto& pair : _alarmSystem.sensors())
@@ -189,126 +164,126 @@ void AlarmSystemWebServer::handleGetSensors() const
         }
     }
 
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto format = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
     String output;
     serializeJson(doc, output);
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto serialize = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
     _server.send(200, "application/json", output);
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto send = micros();
-    log_d("handleGetSensors: init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu", init - start, format - init, serialize - format, send - serialize, send - start);
-
-    inflightHandlerCount--;
-    log_d("EXIT [%u]: handleGetSensors, %u", callId, inflightHandlerCount);
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
 }
 
 void AlarmSystemWebServer::handleGetSensor() const
 {
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto callId = handlerCallCount++;
-
-    inflightHandlerCount++;
-    log_d("ENTER[%u]: handleGetSensor, %u", callId, inflightHandlerCount);
-
-    auto start = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
     auto sensorIdString = _server.pathArg(0);
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto fetch = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
     uint64_t sensorId;
     if (!fromString(sensorIdString, sensorId))
     {
-        _server.send(400, "plain/text", "Invalid sensor ID: " + sensorIdString);
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-        inflightHandlerCount--;
-        log_d("EXIT [%u]: handleGetSensor, %u", callId, inflightHandlerCount);
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
+        _server.send(400, "text/plain", "Invalid sensor ID: " + sensorIdString);
         return;
     }
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto parse = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    
-    if (_alarmSystem.sensors().size() > 0)
+
+    const auto* sensor = _alarmSystem.getSensor(sensorId);
+    if (sensor == nullptr)
     {
-        for (const auto& pair : _alarmSystem.sensors())
+        _server.send(404, "text/plain", "Cannot find sensor " + sensorIdString);
+        return;
+    }
+    
+    DynamicJsonDocument doc(128);
+    auto sensorObj = doc.to<JsonObject>();
+
+    sensorObj["id"] = toString(sensor->id);
+    sensorObj["state"] = toString(sensor->state);
+    sensorObj["lastUpdate"] = (millis() - sensor->lastUpdate) / 1000;
+    sensorObj["enabled"] = sensor->enabled ? "yes" : "no";
+    sensorObj["name"] = String(sensor->name);
+
+    String output;
+    serializeJson(doc, output);
+
+    _server.send(200, "application/json", output);
+}
+
+void AlarmSystemWebServer::handleUpdateSensor()
+{
+    auto sensorIdString = _server.pathArg(0);
+    uint64_t sensorId;
+    if (!fromString(sensorIdString, sensorId))
+    {
+        _server.send(400, "text/plain", "Invalid sensor ID: " + sensorIdString);
+        return;
+    }
+    
+    auto* sensor = _alarmSystem.getSensor(sensorId);
+    if (sensor == nullptr)
+    {
+        _server.send(404, "text/plain", "Cannot find sensor " + sensorIdString);
+        return;
+    }
+
+    bool changed = false;
+    for (auto i = 0; i < _server.args(); ++i)
+    {
+        auto argName = _server.argName(i);
+        log_i("argName: %s", argName.c_str());
+        if (argName == "name")
         {
-            const auto& sensor = pair.second;
-            if (sensor.id == sensorId)
+            auto name = _server.arg(i);
+            log_i("name=%s", name.c_str());
+            if (name != sensor->name)
             {
-                DynamicJsonDocument doc(128);
-                auto sensorObj = doc.to<JsonObject>();
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-                auto init = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
-                sensorObj["id"] = toString(sensor.id);
-                sensorObj["state"] = toString(sensor.state);
-                sensorObj["lastUpdate"] = (millis() - sensor.lastUpdate) / 1000;
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-                auto format = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
-                String output;
-                serializeJson(doc, output);
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-                auto serialize = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
-                _server.send(200, "application/json", output);
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-                auto send = micros();
-                log_d("handleGetSensor: fetch: %lu, parse: %lu, init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu", fetch - start, parse - fetch, init - parse, format - init, serialize - format, send - serialize, send - start);
-
-                inflightHandlerCount--;
-                log_d("EXIT [%u]: handleGetSensor, %u", callId, inflightHandlerCount);
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
+                sensor->name = name;
+                changed = true;
+            }
+        }
+        else if (argName == "enabled")
+        {
+            auto enabledString = _server.arg(i);
+            log_i("enabled=%s", enabledString.c_str());
+            bool enable;
+            if (enabledString == "yes")
+            {
+                enable = true;
+            }
+            else if (enabledString == "no")
+            {
+                enable = false;
+            }
+            else
+            {
+                _server.send(400, "text/plain", "Invalid enabeld value: " + enabledString + " must be yes or no");
                 return;
             }
+
+            if (sensor->enabled != enable)
+            {
+                sensor->enabled = enable;
+                changed = true;
+            }
+        }
+        else
+        {
+            _server.send(400, "text/plain", "Unsupported argument: " + argName);
+            return;
         }
     }
 
+    if (changed)
+    {
+        log_i("Updating sensor %016llX", sensor->id);
+        if (!_alarmSystem.updateSensor(*sensor))
+        {
+            _server.send(500, "text/plain", "Error updating sensor");
+            return;
+        }
+    }
 
-    _server.send(404, "plain/text", "Cannot find sensor " + sensorIdString);
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    inflightHandlerCount--;
-    log_d("EXIT [%u]: handleGetSensor, %u", callId, inflightHandlerCount);
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
+    _server.send(200, "text/plain", "OK");
+    return;
 }
+
 
 void AlarmSystemWebServer::handleGetValidOperations() const
 {
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto callId = handlerCallCount++;
-
-    inflightHandlerCount++;
-    log_d("ENTER[%u]: handleGetValidOperations, %u", callId, inflightHandlerCount);
-
-    auto start = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
     DynamicJsonDocument doc(128);
     auto arrayObject = doc.to<JsonArray>();
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto init = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
 
     if (_alarmSystem.validOperations().size() > 0)
     {
@@ -318,25 +293,8 @@ void AlarmSystemWebServer::handleGetValidOperations() const
         }
     }
 
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto format = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
     String output;
     serializeJson(doc, output);
 
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto serialize = micros();
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-
     _server.send(200, "application/json", output);
-
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-    auto send = micros();
-
-    log_d("handleGetValidOperations: init: %lu, format: %lu, serialize: %lu, send: %lu, total: %lu", init - start, format - init, serialize - format, send - serialize, send - start);
-
-    inflightHandlerCount--;
-    log_d("EXIT [%u]: handleGetValidOperations, %u", callId, inflightHandlerCount);
-#endif // #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
 }

@@ -34,11 +34,15 @@ public:
     State state() const;
     std::vector<Operation> validOperations() const;
     const SensorMap& sensors() const;
+    AlarmSensor* getSensor(uint64_t sensorId);
+    const AlarmSensor* getSensor(uint64_t sensorId) const;
     bool canArm() const;
     bool arm();
     void disarm();
+    bool updateSensor(AlarmSensor& sensor);
 private:
     void onDataReceive(const uint8_t * mac_addr, const uint8_t *incomingData, int len);
+    void handleSensorEvents();
     void updateSensorState(uint64_t sensorId, SensorState::State newState);
     // TODO: The nex two methods need to be moved to a policy class:
     void handleSensorState(AlarmSensor& sensor, SensorState::State newState);
@@ -51,7 +55,13 @@ private:
     SoundPlayer _soundPlayer;
     AlarmSystemWebServer _webServer;
     AlarmPersistentState _flashState;
-    SensorMap _senors;    // Well slap me! I used and STL container in FW code!
+    SensorMap _sensors;    // Well slap me! I used and STL container in FW code!
     State _alarmState;
     unsigned long _lastCheck;
+    struct SensorEventMessage
+    {
+        uint8_t macAddress[6];
+        SensorState state;
+    };
+    QueueHandle_t _sensorEventQueue;
 };

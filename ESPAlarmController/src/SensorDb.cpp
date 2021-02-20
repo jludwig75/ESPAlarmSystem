@@ -77,7 +77,29 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
                 log_e("Failed to parse sensor ID: \"%s\" is not a hexidecimal string", idString.c_str());
                 return false;
             }
-            _sensors.push_back(AlarmSensor(id, SensorState::Unknown));
+
+            bool enabled = false;
+            if (sensor.containsKey("enabled"))
+            {
+                auto enabledString = sensor["enabled"].as<String>();
+                if (enabledString == "true")
+                {
+                    enabled = true;
+                }
+                else if (enabledString != "false")
+                {
+                    log_e("Loaded invalid value for sensor %016llX \"enabled\" field: %s", id, enabledString.c_str());
+                    return false;
+                }
+            }
+
+            String name;
+            if (sensor.containsKey("name"))
+            {
+                name = sensor["name"].as<String>();
+            }
+
+            _sensors.push_back(AlarmSensor(id, enabled, name, SensorState::Unknown));
         }
 
         _listLoaded = true;
@@ -89,8 +111,8 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
 
 bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
 {
-    auto sensorList = _sensors;
-    for (const auto& sensorInList : sensorList)
+    _tempSensorList = _sensors;
+    for (const auto& sensorInList : _tempSensorList)
     {
         if (sensorInList.id == sensor.id)
         {
@@ -99,9 +121,9 @@ bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
         }
     }
 
-    sensorList.push_back(sensor);
+    _tempSensorList.push_back(sensor);
 
-    if (!writeDbFile(sensorList))
+    if (!writeDbFile(_tempSensorList))
     {
         log_e("Failed to write sensor list to file");
         return false;
@@ -111,6 +133,37 @@ bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
     _sensors.push_back(sensor);
     return true;
 }
+
+bool SensorDataBase::updateSensor(const AlarmSensor& sensor)
+{
+    log_a("Upating sensor %016llX", sensor.id);
+
+    _tempSensorList = _sensors;
+    bool found = false;
+    for (auto& sensorInList : _tempSensorList)
+    {
+        if (sensorInList.id == sensor.id)
+        {
+            sensorInList = sensor;
+            found = true;
+        }
+    }
+    if (!found)
+    {
+        _tempSensorList.push_back(sensor);
+    }
+
+    if (!writeDbFile(_tempSensorList))
+    {
+        log_e("Failed to write sensor list to file");
+        return false;
+    }
+
+    // Add the sensor to the list once it has been written to the file.
+    _sensors.push_back(sensor);
+    return true;
+}
+
 
 bool SensorDataBase::writeDbFile(const SensorList& sensors)
 {
@@ -128,6 +181,8 @@ bool SensorDataBase::writeDbFile(const SensorList& sensors)
         auto sensorObj = arrayData.createNestedObject();
 
         sensorObj["id"] = toString(sensor.id);
+        sensorObj["enabled"] = String(sensor.enabled ? "true" : "false");
+        sensorObj["name"] = sensor.name;
     }
 
     // TODO: Check for and handle file write errors.

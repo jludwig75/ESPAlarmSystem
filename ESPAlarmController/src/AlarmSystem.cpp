@@ -34,7 +34,8 @@ AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bcl
     _soundPlayer(bclkPin, wclkPin, doutPin),
     _webServer(*this),
     _alarmState(State::Disarmed),
-    _lastCheck(0)
+    _lastCheck(0),
+    _sensorEventQueue(nullptr)
 {
 }
 
@@ -58,6 +59,13 @@ bool AlarmSystem::begin()
 
     log_a("Initializing web server");
     _webServer.begin();
+
+    _sensorEventQueue = xQueueCreate(16, sizeof(SensorEventMessage));
+    if (_sensorEventQueue == nullptr)
+    {
+        log_e("Failed to create sensor event queue");
+        return false;
+    }
 
     initTime();
 
@@ -86,7 +94,7 @@ void AlarmSystem::loadAlarmSensorsFromDb()
     for (const auto& sensor : sensors)
     {
         log_a("  %016llX", sensor.id);
-        _senors[sensor.id] = sensor;
+        _sensors[sensor.id] = sensor;
     }
     log_a("end of loaded alarm sensor list");
 }
@@ -140,6 +148,9 @@ void AlarmSystem::initTime()
 
 void AlarmSystem::onLoop()
 {
+    handleSensorEvents();
+    _soundPlayer.onLoop();
+
     auto now = millis();
 
     if (now - _lastCheck > 1 * 1000)
@@ -160,7 +171,7 @@ void AlarmSystem::onLoop()
 
         checkSensors();
     }
-    _soundPlayer.onLoop();
+
     _webServer.onLoop();
 }
 
@@ -189,25 +200,56 @@ std::vector<AlarmSystem::Operation> AlarmSystem::validOperations() const
 
 const SensorMap& AlarmSystem::sensors() const
 {
-    return _senors;
+    return _sensors;
 }
+
+AlarmSensor* AlarmSystem::getSensor(uint64_t sensorId)
+{
+    for (auto& pair : _sensors)
+    {
+        auto& sensor = pair.second;
+        if (sensor.id == sensorId)
+        {
+            return &sensor;
+        }
+    }
+
+    return nullptr;
+}
+
+const AlarmSensor* AlarmSystem::getSensor(uint64_t sensorId) const
+{
+    return const_cast<AlarmSystem*>(this)->getSensor(sensorId);
+}
+
+bool AlarmSystem::updateSensor(AlarmSensor& sensor)
+{
+    return _sensorDb.updateSensor(sensor);
+}
+
 
 bool AlarmSystem::canArm() const
 {
-    if (_senors.empty())
+    if (_sensors.empty())
     {
         return false;
     }
 
-    for (auto pair : _senors)
+    auto enabledSensors = 0;
+    for (auto pair : _sensors)
     {
-        if (pair.second.state != SensorState::Closed)
+        const auto& sensor = pair.second;
+        if (sensor.enabled)
         {
-            return false;
+            if (sensor.state != SensorState::Closed)
+            {
+                return false;
+            }
+            enabledSensors++;
         }
     }
 
-    return true;
+    return enabledSensors > 0;
 }
 
 bool AlarmSystem::arm()
@@ -267,40 +309,65 @@ void AlarmSystem::disarm()
 
 void AlarmSystem::onDataReceive(const uint8_t * mac_addr, const uint8_t *incomingData, int len)
 {
-    uint64_t sensorId = macAddressToId(mac_addr);
-    log_i("Received data from sensor %016llX: %d bytes", sensorId, len);
+    log_a("Received sensor message");
+    SensorEventMessage message;
+    memcpy(message.macAddress, mac_addr, sizeof(message.macAddress));
 
-    SensorState sensorState;
-    if (len < sizeof(sensorState))
+    if (len < sizeof(message.state))
     {
-        log_e("Recevied data is too small: %d bytes, %u expected", len, sizeof(sensorState));
+        log_e("Recevied data is too small: %d bytes, %u expected", len, sizeof(message.state));
         return;
     }
 
-    memcpy(&sensorState, incomingData, sizeof(sensorState));
-    log_a("Sensor %016llX state: wakeup reason: \"%s\", state: %s, vcc: %.2f, @ %.3f",
-                  sensorId,
-                  SensorState::wakeupReasontoString(sensorState.wakeupReason),
-                  SensorState::toString(sensorState.state),
-                  sensorState.vcc,
-                  static_cast<double>(millis()) / 1000.0);
-    
-    updateSensorState(sensorId, sensorState.state);
+    memcpy(&message.state, incomingData, sizeof(message.state));
+
+    auto ret = xQueueSend(_sensorEventQueue, &message, 0);
+    if (ret != pdTRUE)
+    {
+        log_e("Failed to queue sensor event. Error: %d", ret);
+        if (ret == errQUEUE_FULL)
+        {
+            log_e("Sensor event queue full");
+        }
+    }
+}
+
+void AlarmSystem::handleSensorEvents()
+{
+    SensorEventMessage message;
+    // Only one event per iteration
+    if (xQueueReceive(_sensorEventQueue, &message, 0) == pdTRUE)
+    {
+        uint64_t sensorId = macAddressToId(message.macAddress);
+
+        log_a("Sensor %016llX state: wakeup reason: \"%s\", state: %s, vcc: %.2f, @ %.3f",
+                    sensorId,
+                    SensorState::wakeupReasontoString(message.state.wakeupReason),
+                    SensorState::toString(message.state.state),
+                    message.state.vcc,
+                    static_cast<double>(millis()) / 1000.0);
+
+        updateSensorState(sensorId, message.state.state);
+    }
 }
 
 void AlarmSystem::updateSensorState(uint64_t sensorId, SensorState::State newState)
 {
-    auto it = _senors.find(sensorId);
-    if (it == _senors.end())
+    log_a("Sensor event: %016llX, new state: %u", sensorId, newState);
+    auto it = _sensors.find(sensorId);
+    if (it == _sensors.end())
     {
         log_a("New sensor: %016llX", sensorId);
 
-        _senors[sensorId] = AlarmSensor(sensorId, newState);
-        it = _senors.find(sensorId);
-        assert(it != _senors.end());
+        _sensors[sensorId] = AlarmSensor(sensorId, false, "", newState);
+        it = _sensors.find(sensorId);
+        if (it == _sensors.end())
+        {
+            log_e("Cannot find sensor that was just added");
+            assert(it != _sensors.end());
+        }
 
-        log_i("Storing sensor to DB: %016llX", sensorId);
-        if (!_sensorDb.storeSensor(_senors[sensorId]))
+        if (!_sensorDb.storeSensor(_sensors[sensorId]))
         {
             log_e("Failed to store sensor %016llX to sensor database", sensorId);
             // Keep running.
@@ -317,6 +384,12 @@ void AlarmSystem::updateSensorState(uint64_t sensorId, SensorState::State newSta
 
 void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newState)
 {
+    if (!sensor.enabled)
+    {
+        // Ignore disabled/unregistered sensors
+        return;
+    }
+
     if (_alarmState == State::Disarmed)
     {
         if (sensor.state != SensorState::Open && newState == SensorState::Open && sensor.lastUpdate > 0)
@@ -377,9 +450,14 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
 
 void AlarmSystem::checkSensors()
 {
-    for (auto& pair : _senors)
+    for (auto& pair : _sensors)
     {
         auto& sensor = pair.second;
+        if (!sensor.enabled)
+        {
+            // Ignore disabled/unregistered sensors
+            continue;
+        }
         auto timeSinceLastUpdate = millis() - sensor.lastUpdate;
         auto timeout = _alarmState == State::Armed ? MAX_SENSOR_UPDATE_TIMEOUT_ARMED_MS : MAX_SENSOR_UPDATE_TIMEOUT_DISARMED_MS;
         if (timeSinceLastUpdate > timeout)

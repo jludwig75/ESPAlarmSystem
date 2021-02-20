@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 
 #include "protocol.h"
 
@@ -10,15 +11,18 @@ public:
     AlarmSensor()
         :
         id(0),
+        enabled(0),
         state(SensorState::Unknown),
         lastUpdate(0),
         faultLastHandled(0)
     {
     }
 
-    AlarmSensor(uint64_t id, SensorState::State state)
+    AlarmSensor(uint64_t id, bool enabled, const String& name, SensorState::State state)
         :
         id(id),
+        enabled(enabled),
+        name(name),
         state(state),
         lastUpdate(0),
         faultLastHandled(0)
@@ -32,6 +36,9 @@ public:
     }
 
     uint64_t id;
+    bool enabled;
+    String name;
+
     SensorState::State state;
     unsigned long lastUpdate;
     unsigned long faultLastHandled;

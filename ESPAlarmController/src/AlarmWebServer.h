@@ -4,6 +4,7 @@
 #include <WebServer.h>
 
 class AlarmSystem;
+class AlarmSensor;
 
 
 class AlarmSystemWebServer
@@ -14,8 +15,9 @@ public:
     void onLoop();
 private:
     void handleGetState() const;
-    void handleGetSensor() const;
     void handleGetSensors() const;
+    void handleGetSensor() const;
+    void handleUpdateSensor();
     void handleGetValidOperations() const;
     void handlePostOperation();
     AlarmSystem& _alarmSystem;

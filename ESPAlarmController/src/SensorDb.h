@@ -14,8 +14,10 @@ public:
     bool begin();
     bool getAlarmSensors(SensorList& sensors) const;
     bool storeSensor(const AlarmSensor& sensor);
+    bool updateSensor(const AlarmSensor& sensor);
 private:
     bool writeDbFile(const SensorList& sensors);
     mutable bool _listLoaded;
     mutable SensorList _sensors;
+    mutable SensorList _tempSensorList;
 };
