@@ -203,6 +203,12 @@ void AlarmSystemWebServer::handleGetSensor() const
 
 void AlarmSystemWebServer::handleUpdateSensor()
 {
+    if (_alarmSystem.state() != AlarmSystem::State::Disarmed)
+    {
+        _server.send(405, "text/plain", "Sensors can only be modified when the alarm system is disarmed");
+        return;
+    }
+
     auto sensorIdString = _server.pathArg(0);
     uint64_t sensorId;
     if (!fromString(sensorIdString, sensorId))

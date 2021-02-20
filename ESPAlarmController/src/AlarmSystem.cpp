@@ -224,6 +224,12 @@ const AlarmSensor* AlarmSystem::getSensor(uint64_t sensorId) const
 
 bool AlarmSystem::updateSensor(AlarmSensor& sensor)
 {
+    if (_alarmState != State::Disarmed)
+    {
+        log_e("Changes to sensors only allowed when alarm system is disarmed");
+        return false;
+    }
+
     return _sensorDb.updateSensor(sensor);
 }
 

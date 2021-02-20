@@ -21,7 +21,7 @@ app.component('sensor-list-view', {
                 </td>
                 <td>
                     {{ sensor.enabled }}
-                    <button v-on:click="toggleSensorEnanbled(sensor)">
+                    <button :disabled="alarmSystemState != 'Disarmed'" v-on:click="toggleSensorEnanbled(sensor)">
                         {{ sensor.enabled == "yes" ? "Disable" : "Enable" }}
                     </button>
                 </td>
@@ -33,7 +33,7 @@ app.component('sensor-list-view', {
                     </span>
                     <span v-else>
                         {{ sensor.name }}
-                        <button v-on:click="editName(sensor)">Edit</button>
+                        <button :disabled="alarmSystemState != 'Disarmed'" v-on:click="editName(sensor)">Edit</button>
                     </span>
                 </td>
             </tr>
@@ -43,7 +43,8 @@ app.component('sensor-list-view', {
 `,
     data() {
         return {
-            sensors: []
+            sensors: [],
+            alarmSystemState: ""
         }
     },
     methods: {
@@ -149,11 +150,24 @@ app.component('sensor-list-view', {
                 sensor.newName = sensor.name;
             }
             this.getSensorDetails(sensor.id);
+        },
+        getAlarmState() {
+            axios.
+                get('/alarm_system/state').
+                then(response => this.gotAlarmState(response.data)).
+                catch(error => console.log('Failed to get alarm system state'));
+        },
+        gotAlarmState(state) {
+            this.alarmSystemState = state;
+        },
+        updateUI() {
+            this.getSensors();
+            this.getAlarmState();
         }
     },
     mounted() {
-        this.getSensors();
-        this.polling = setInterval(this.getSensors, 1000);
+        this.updateUI();
+        this.polling = setInterval(this.updateUI, 1000);
     },
     beforeUnmount() {
         clearInterval(this.polling);
