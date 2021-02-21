@@ -209,16 +209,13 @@ const SensorMap& AlarmSystem::sensors() const
 
 AlarmSensor* AlarmSystem::getSensor(uint64_t sensorId)
 {
-    for (auto& pair : _sensors)
+    auto it = _sensors.find(sensorId);
+    if (it == _sensors.end())
     {
-        auto& sensor = pair.second;
-        if (sensor.id == sensorId)
-        {
-            return &sensor;
-        }
+        return nullptr;
     }
 
-    return nullptr;
+    return &it->second;
 }
 
 const AlarmSensor* AlarmSystem::getSensor(uint64_t sensorId) const
