@@ -32,7 +32,7 @@ AlarmSystem::AlarmSystem(const String& apSSID, const String& apPassword, int bcl
                         onDataReceive(mac_addr, incomingData, len);
                     }),
     _soundPlayer(bclkPin, wclkPin, doutPin),
-    _webServer(*this),
+    _webServer(*this, _log),
     _alarmState(State::Disarmed),
     _lastCheck(0),
     _sensorEventQueue(nullptr)
@@ -68,6 +68,8 @@ bool AlarmSystem::begin()
     }
 
     initTime();
+
+    _log.logEvent(ActivityLog::EventType::SystemStart);
 
     return true;
 }
@@ -118,10 +120,12 @@ void AlarmSystem::loadPersistedState()
         case AlarmPersistentState::AlarmState::Armed:
             log_a("Persisted alarm state: Armed");
             _alarmState = State::Armed;
+            _log.logEvent(ActivityLog::EventType::AlarmArmed);
             break;
         case AlarmPersistentState::AlarmState::Triggerd:
             log_a("ALARM: Persisted alarm state: Triggered. Resounding alarm");
             _alarmState = State::AlarmTriggered;
+            _log.logEvent(ActivityLog::EventType::AlarmTriggered);
             break;
         default:
             log_d("Persisted alarm state: %u", _flashState.get());
@@ -286,6 +290,7 @@ bool AlarmSystem::arm()
         // Don't fail.
         // TODO: Somehow let the user know this. This should be shown in the web UI.
     }
+    _log.logEvent(ActivityLog::EventType::AlarmArmed);
     return true;
 }
 
@@ -310,6 +315,7 @@ void AlarmSystem::disarm()
         // Don't fail.
         // TODO: Somehow let the user know this. This should be shown in the web UI.
     }
+    _log.logEvent(ActivityLog::EventType::AlarmDisarmed);
 }
 
 
@@ -378,6 +384,8 @@ void AlarmSystem::updateSensorState(uint64_t sensorId, SensorState::State newSta
             log_e("Failed to store sensor %016llX to sensor database", sensorId);
             // Keep running.
         }
+
+        _log.logEvent(ActivityLog::EventType::NewSensor, sensorId);
     }
 
     handleSensorState(it->second, newState);
@@ -404,6 +412,8 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
             {
                 log_e("Failed to play sound");
             }
+
+            _log.logEvent(ActivityLog::EventType::SensorOpened, sensor.id);
         }
         else if (sensor.state != SensorState::Closed && newState == SensorState::Closed && sensor.lastUpdate > 0)
         {
@@ -411,6 +421,8 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
             {
                 log_e("Failed to play sound");
             }
+
+            _log.logEvent(ActivityLog::EventType::SensorClosed, sensor.id);
         }
         else if (newState == SensorState::Fault)
         {
@@ -425,6 +437,8 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
                     sensor.faultLastHandled = millis();
                 }
             }
+
+            _log.logEvent(ActivityLog::EventType::SensorFault, sensor.id);
         }
     }
     else if (_alarmState == State::Armed)
@@ -448,6 +462,7 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
                 // Don't fail.
                 // TODO: Somehow let the user know this. This should be shown in the web UI.
             }
+            _log.logEvent(ActivityLog::EventType::AlarmTriggered, sensor.id);
         default:
             break;
         }
@@ -479,6 +494,7 @@ void AlarmSystem::checkSensors()
                 _soundPlayer.silence();
                 _alarmState = State::Disarmed;
                 log_a("FAULT: Alarm disarmed");
+                _log.logEvent(ActivityLog::EventType::AlarmArmingFailed, sensor.id);
                 /* Fall through */
             case State::Disarmed:
                 if (millis() - sensor.faultLastHandled > SENSOR_FAULT_CHIME_INTERVAL_MS)
@@ -495,11 +511,21 @@ void AlarmSystem::checkSensors()
                 break;
             case State::Armed:
                 // TODO: Should we sound the alarm in this case? I think so, but maybe just play the fault sound?
-                log_a("ALARM: Sounding alarm!!");
-                _alarmState = State::AlarmTriggered;
-                if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmSouding))
                 {
-                    log_e("Failed to play sound");
+                    log_a("ALARM: Sounding alarm!!");
+                    bool firstTriggered = _alarmState != State::AlarmTriggered;;
+
+                    _alarmState = State::AlarmTriggered;
+
+                    if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmSouding))
+                    {
+                        log_e("Failed to play sound");
+                    }
+
+                    if (firstTriggered)
+                    {
+                        _log.logEvent(ActivityLog::EventType::AlarmTriggered, sensor.id);
+                    }
                 }
                 break;
             case State::AlarmTriggered:

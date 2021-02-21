@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include <Logging.h>
 
+#include "ActivityLog.h"
 #include "AlarmSystem.h"
 
 
@@ -72,9 +73,10 @@ AlarmSystem::Operation operationFromString(const String& str)
 
 }
 
-AlarmSystemWebServer::AlarmSystemWebServer(AlarmSystem& alarmSystem)
+AlarmSystemWebServer::AlarmSystemWebServer(AlarmSystem& alarmSystem, ActivityLog& activityLog)
     :
     _alarmSystem(alarmSystem),
+    _activityLog(activityLog),
     _server(80)
 {
 }
@@ -88,6 +90,7 @@ void AlarmSystemWebServer::begin()
     _server.on("/alarm_system/sensor", HTTP_GET, [this]() { handleGetSensors(); } );
     _server.on("/alarm_system/operation", HTTP_GET, [this]() { handleGetValidOperations(); } );
     _server.on("/alarm_system/operation", HTTP_POST, [this]() { handlePostOperation(); } );
+    _server.on("/alarm_system/events", HTTP_GET, [this]() { handleGetEvents(); } );
 
     // Handle these seperately, to make them immutable in the cache:
     _server.serveStatic("/axios.min.js", SPIFFS, "/html/axios.min.js", "public, max-age=604800, immutable");
@@ -303,4 +306,56 @@ void AlarmSystemWebServer::handleGetValidOperations() const
     serializeJson(doc, output);
 
     _server.send(200, "application/json", output);
+}
+
+String eventTypeToString(ActivityLog::EventType eventType, uint64_t sensorId)
+{
+    switch (eventType)
+    {
+    case ActivityLog::EventType::SystemStart:
+        return "System started";
+    case ActivityLog::EventType::NewSensor:
+        return "New sensor " + toString(sensorId) + " detected";
+    case ActivityLog::EventType::SensorOpened:
+        return toString(sensorId) + " opened";
+    case ActivityLog::EventType::SensorClosed:
+        return toString(sensorId) + " closed";
+    case ActivityLog::EventType::SensorFault:
+        return toString(sensorId) + " fault";
+    case ActivityLog::EventType::AlarmArmed:
+        return "Alarm system armed";
+    case ActivityLog::EventType::AlarmDisarmed:
+        return "Alarm system disarmed";
+    case ActivityLog::EventType::AlarmTriggered:
+        return "Alarm triggered by " + toString(sensorId);
+    case ActivityLog::EventType::AlarmArmingFailed:
+        return "Failed to arm system";
+    default:
+        if (sensorId == 0)
+        {
+            return "Uknown system event";
+        }
+        return "Uknown event from sensor " + toString(sensorId);
+    }
+
+}
+
+void AlarmSystemWebServer::handleGetEvents() const
+{
+    String response;
+    for (auto i = 0; i < _activityLog.numberOfEvents(); ++i)
+    {
+        time_t eventTime;
+        ActivityLog::EventType eventType;
+        uint64_t sensorId;
+        if (!_activityLog.getEvent(i, eventTime, eventType, sensorId))
+        {
+            log_e("Failed to get event from activity log");
+            continue;
+        }
+
+        response += String(eventTime) + ": " + eventTypeToString(eventType, sensorId) + "\n";
+    }
+
+    _server.send(200, "text/plain", response);
 }

@@ -3,14 +3,15 @@
 #include <WebServer.h>
 #include <WebServer.h>
 
-class AlarmSystem;
+class ActivityLog;
 class AlarmSensor;
+class AlarmSystem;
 
 
 class AlarmSystemWebServer
 {
 public:
-    AlarmSystemWebServer(AlarmSystem& alarmSystem);
+    AlarmSystemWebServer(AlarmSystem& alarmSystem, ActivityLog& activityLog);
     void begin();
     void onLoop();
 private:
@@ -20,6 +21,8 @@ private:
     void handleUpdateSensor();
     void handleGetValidOperations() const;
     void handlePostOperation();
+    void handleGetEvents() const;
     AlarmSystem& _alarmSystem;
+    ActivityLog& _activityLog;
     mutable WebServer _server;
 };

@@ -130,7 +130,7 @@ bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
     }
 
     // Add the sensor to the list once it has been written to the file.
-    _sensors.push_back(sensor);
+    _sensors = _tempSensorList;
     return true;
 }
 
@@ -146,6 +146,7 @@ bool SensorDataBase::updateSensor(const AlarmSensor& sensor)
         {
             sensorInList = sensor;
             found = true;
+            break;
         }
     }
     if (!found)
@@ -160,7 +161,7 @@ bool SensorDataBase::updateSensor(const AlarmSensor& sensor)
     }
 
     // Add the sensor to the list once it has been written to the file.
-    _sensors.push_back(sensor);
+    _sensors = _tempSensorList;
     return true;
 }
 

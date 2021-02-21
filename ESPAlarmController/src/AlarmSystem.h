@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ActivityLog.h>
 #include <AlarmPersistentState.h>
 #include <AlarmWebServer.h>
 #include <SensorDb.h>
@@ -55,6 +56,7 @@ private:
     SoundPlayer _soundPlayer;
     AlarmSystemWebServer _webServer;
     AlarmPersistentState _flashState;
+    ActivityLog _log;
     SensorMap _sensors;    // Well slap me! I used and STL container in FW code!
     State _alarmState;
     unsigned long _lastCheck;
