@@ -29,7 +29,7 @@ app.component('event-list-view', {
     },
     mounted() {
         this.getEvents();
-        this.polling = setInterval(this.getEvents, 11 * 1000);
+        this.polling = setInterval(this.getEvents, 5 * 1000);
     },
     beforeUnmount() {
         clearInterval(this.polling);
