@@ -40,3 +40,10 @@ td {
 fieldset {
     padding: 0.8em;
 }
+
+#events-list {
+    float: none;
+    margin: 0;
+    border: 0;
+    padding: 1em;
+}
