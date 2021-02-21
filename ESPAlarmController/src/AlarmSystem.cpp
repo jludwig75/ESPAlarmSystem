@@ -69,6 +69,8 @@ bool AlarmSystem::begin()
 
     initTime();
 
+    _log.begin();
+
     _log.logEvent(ActivityLog::EventType::SystemStart);
 
     return true;
@@ -153,7 +155,9 @@ void AlarmSystem::initTime()
 void AlarmSystem::onLoop()
 {
     handleSensorEvents();
+    _webServer.onLoop();
     _soundPlayer.onLoop();
+    _webServer.onLoop();
 
     auto now = millis();
 
@@ -174,9 +178,11 @@ void AlarmSystem::onLoop()
         }
 
         checkSensors();
+        _webServer.onLoop();
     }
 
     _webServer.onLoop();
+    _log.onLoop();
 }
 
 AlarmSystem::State AlarmSystem::state() const

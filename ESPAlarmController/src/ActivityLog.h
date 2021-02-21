@@ -20,19 +20,24 @@ public:
         AlarmArmingFailed
     };
     ActivityLog();
-    bool begin();
+    void begin();
+    void onLoop();
     void logEvent(EventType type, uint64_t sensorId = 0);
     size_t numberOfEvents() const;
     bool getEvent(size_t i, time_t& eventTime, EventType& eventType, uint64_t& sensorId);
 private:
     size_t maxEntries() const;
+    void flush();
+    bool isCriticalEvent(EventType eventType) const;
     struct ActivityLogEntry
     {
-        struct tm eventTime;
+        time_t eventTime;
         ActivityLog::EventType event;
         uint64_t sensorId;
     };
     ActivityLogEntry _log[32];
     size_t _nextLogEntry;
     size_t _eventsStored;
+    bool _dirty;
+    unsigned long _lastFlushTime;
 };
