@@ -31,33 +31,46 @@ app.component('event-list-view', {
                 catch(error => console.log('Failed to get alarm system activity log: ' + error));
         },
         gotEvents(events) {
+            eventList = this.parseEventList(events);
+            for (let evt of eventList) {
+                if (!this.events.find(evt2 => evt2.id == evt.id)) {
+                    this.events.push(evt);
+                }
+            }
+            for (let i = 0; i < this.events.length; ) {
+                if (!eventList.find(evt2 => evt2.id == this.events[i].id)) {
+                    this.events.splice(i, 1);
+                }
+                else
+                {
+                    i++;
+                }
+            }
+        },
+        parseEventList(events) {
             var eventList = events.split('\n');
-            for (eventString of eventList)
+            var parsedEvents = [];
+            for (let eventString of eventList)
             {
                 if (eventString.length == 0)
                 {
                     continue;
                 }
-                parts = eventString.split(': ')
-                var timestamp = parseInt(parts[0]);
-                var dtString = this.getDateTimeString(timestamp);
-                this.addEvent( {
-                    'timestamp': timestamp,
+                parts = eventString.split(':|:')
+                if (parts.length != 3)
+                {
+                    continue;
+                }
+                var id = parseInt(parts[0]);
+                var dtString = this.getDateTimeString(parseInt(parts[1]));
+                parsedEvents.push({
+                    'id': id,
                     'dateTime': dtString,
-                    'message': parts.slice(1).join(': ')
+                    'message': parts[2]
                 });
             }
-        },
-        addEvent(newEvent) {
-            for (evt of this.events) {
-                if (newEvent.timestamp == evt.timestamp &&
-                    newEvent.message == evt.message)
-                {
-                    return;   
-                }
-            }
 
-            this.events.push(newEvent);
+            return parsedEvents;
         },
         getDateTimeString(epochTime)
         {

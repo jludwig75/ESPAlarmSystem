@@ -360,16 +360,17 @@ void AlarmSystemWebServer::handleGetEvents() const
     String response;
     for (auto i = 0; i < _activityLog.numberOfEvents(); ++i)
     {
+        unsigned long id;
         time_t eventTime;
         ActivityLog::EventType eventType;
         uint64_t sensorId;
-        if (!_activityLog.getEvent(i, eventTime, eventType, sensorId))
+        if (!_activityLog.getEvent(i, id, eventTime, eventType, sensorId))
         {
             log_e("Failed to get event from activity log");
             continue;
         }
 
-        response += String(eventTime) + ": " + eventTypeToString(eventType, sensorId) + "\n";
+        response += String(id) + ":|:" + String(eventTime) + ":|:" + eventTypeToString(eventType, sensorId) + "\n";
     }
 
     _server.send(200, "text/plain", response);

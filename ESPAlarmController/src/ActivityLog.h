@@ -24,13 +24,14 @@ public:
     void onLoop();
     void logEvent(EventType type, uint64_t sensorId = 0);
     size_t numberOfEvents() const;
-    bool getEvent(size_t i, time_t& eventTime, EventType& eventType, uint64_t& sensorId);
+    bool getEvent(size_t i, unsigned long& id, time_t& eventTime, EventType& eventType, uint64_t& sensorId);
 private:
     size_t maxEntries() const;
     void flush();
     bool isCriticalEvent(EventType eventType) const;
     struct ActivityLogEntry
     {
+        unsigned long id;
         time_t eventTime;
         ActivityLog::EventType event;
         uint64_t sensorId;
@@ -40,4 +41,5 @@ private:
     size_t _eventsStored;
     bool _dirty;
     unsigned long _lastFlushTime;
+    unsigned long _nextId;
 };

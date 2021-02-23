@@ -18,7 +18,8 @@ ActivityLog::ActivityLog()
     _nextLogEntry(0),
     _eventsStored(0),
     _dirty(false),
-    _lastFlushTime(0)
+    _lastFlushTime(0),
+    _nextId(0)
 {
     memset(_log, 0, sizeof(_log));
 }
@@ -75,6 +76,10 @@ void ActivityLog::begin()
     }
 
     log_a("Loadded %u activities from activity log", _eventsStored);
+
+    struct tm t;
+    getLocalTime(&t);
+    _nextId = mktime(&t);
 }
 
 void ActivityLog::onLoop()
@@ -99,7 +104,7 @@ void ActivityLog::logEvent(EventType type, uint64_t sensorId)
         return;
     }
 
-    ActivityLogEntry entry{mktime(&t), type, sensorId};
+    ActivityLogEntry entry{_nextId++, mktime(&t), type, sensorId};
 
     _log[_nextLogEntry++] = entry;
     if (_nextLogEntry == maxEntries())
@@ -139,7 +144,7 @@ size_t ActivityLog::numberOfEvents() const
     return _eventsStored;
 }
 
-bool ActivityLog::getEvent(size_t i, time_t& eventTime, EventType& eventType, uint64_t& sensorId)
+bool ActivityLog::getEvent(size_t i, unsigned long& id, time_t& eventTime, EventType& eventType, uint64_t& sensorId)
 {
     if (i >= numberOfEvents())
     {
@@ -173,6 +178,7 @@ bool ActivityLog::getEvent(size_t i, time_t& eventTime, EventType& eventType, ui
         return false;
     }
 
+    id = _log[i].id;
     eventTime = _log[i].eventTime;
     eventType = _log[i].event;
     sensorId = _log[i].sensorId;
