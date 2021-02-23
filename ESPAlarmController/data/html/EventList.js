@@ -40,7 +40,6 @@ app.component('event-list-view', {
                     continue;
                 }
                 parts = eventString.split(': ')
-                console.log("parts" + parts);
                 var dtString = this.getDateTimeString(parseInt(parts[0]));
                 this.events.push([dtString, parts.slice(1).join(': ')]);
             }
