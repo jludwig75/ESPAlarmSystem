@@ -35,7 +35,7 @@ private:
         ActivityLog::EventType event;
         uint64_t sensorId;
     };
-    ActivityLogEntry _log[32];
+    ActivityLogEntry _log[16];
     size_t _nextLogEntry;
     size_t _eventsStored;
     bool _dirty;
