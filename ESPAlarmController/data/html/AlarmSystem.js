@@ -38,7 +38,7 @@ app.component('alarm-system-view', {
                 catch(error => console.log('Failed to get valid alarm system operations: ' + error));
         },
         gotValidOperations(valid_operations) {
-            this.valid_operations = valid_operations
+            this.valid_operations = valid_operations;
         },
         refreshBackendData() {
             this.getAlarmState();
@@ -59,6 +59,7 @@ app.component('alarm-system-view', {
         handleOperationSuccess()
         {
             this.refreshBackendData();
+            this.$emit('state-changed');
         },
         handleOperationError()
         {
@@ -67,7 +68,7 @@ app.component('alarm-system-view', {
     },
     mounted() {
         this.refreshBackendData();
-        this.polling = setInterval(this.refreshBackendData, 5 * 1000);
+        this.polling = setInterval(this.refreshBackendData, 3 * 1000);
     },
     beforeUnmount() {
         clearInterval(this.polling);

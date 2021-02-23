@@ -110,6 +110,7 @@ app.component('sensor-list-view', {
         toggleSensorEnanbledSuccess(sensor)
         {
             sensor.enabled = this.toggleEnabledState(sensor.enabled);    // Toggle the current state
+            this.$emit('data-changed');
         },
         toggleEnabledState(state)
         {
@@ -167,7 +168,7 @@ app.component('sensor-list-view', {
     },
     mounted() {
         this.updateUI();
-        this.polling = setInterval(this.updateUI, 5 * 1000);
+        this.polling = setInterval(this.updateUI, 3 * 1000);
     },
     beforeUnmount() {
         clearInterval(this.polling);
