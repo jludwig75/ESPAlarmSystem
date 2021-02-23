@@ -308,26 +308,26 @@ void AlarmSystemWebServer::handleGetValidOperations() const
     _server.send(200, "application/json", output);
 }
 
-String eventTypeToString(ActivityLog::EventType eventType, uint64_t sensorId)
+String AlarmSystemWebServer::eventTypeToString(ActivityLog::EventType eventType, uint64_t sensorId) const
 {
     switch (eventType)
     {
     case ActivityLog::EventType::SystemStart:
         return "System started";
     case ActivityLog::EventType::NewSensor:
-        return "New sensor " + toString(sensorId) + " detected";
+        return "New sensor " + sensorDisplayName(sensorId) + " detected";
     case ActivityLog::EventType::SensorOpened:
-        return toString(sensorId) + " opened";
+        return sensorDisplayName(sensorId) + " opened";
     case ActivityLog::EventType::SensorClosed:
-        return toString(sensorId) + " closed";
+        return sensorDisplayName(sensorId) + " closed";
     case ActivityLog::EventType::SensorFault:
-        return toString(sensorId) + " fault";
+        return sensorDisplayName(sensorId) + " fault";
     case ActivityLog::EventType::AlarmArmed:
         return "Alarm system armed";
     case ActivityLog::EventType::AlarmDisarmed:
         return "Alarm system disarmed";
     case ActivityLog::EventType::AlarmTriggered:
-        return "Alarm triggered by " + toString(sensorId);
+        return "Alarm triggered by " + sensorDisplayName(sensorId);
     case ActivityLog::EventType::AlarmArmingFailed:
         return "Failed to arm system";
     default:
@@ -338,6 +338,21 @@ String eventTypeToString(ActivityLog::EventType eventType, uint64_t sensorId)
         return "Uknown event from sensor " + toString(sensorId);
     }
 
+}
+
+String AlarmSystemWebServer::sensorDisplayName(uint64_t sensorId) const
+{
+    if (sensorId == 0)
+    {
+        return "Uknown";
+    }
+    const auto* sensor = _alarmSystem.getSensor(sensorId);
+    if (sensor == nullptr || sensor->name.isEmpty())
+    {
+        return "Sensor " + toString(sensorId);
+    }
+
+    return sensor->name;
 }
 
 void AlarmSystemWebServer::handleGetEvents() const

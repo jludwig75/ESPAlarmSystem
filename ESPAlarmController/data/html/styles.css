@@ -42,8 +42,21 @@ fieldset {
 }
 
 #events-list {
-    float: none;
     margin: 0;
     border: 0;
     padding: 1em;
+}
+
+.event-entry {
+    white-space: nowrap;
+}
+
+#top-view::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.timestamp-field {
+    font-weight: bold;
 }

@@ -3,7 +3,9 @@
 #include <WebServer.h>
 #include <WebServer.h>
 
-class ActivityLog;
+#include "ActivityLog.h"
+
+
 class AlarmSensor;
 class AlarmSystem;
 
@@ -22,6 +24,8 @@ private:
     void handleGetValidOperations() const;
     void handlePostOperation();
     void handleGetEvents() const;
+    String eventTypeToString(ActivityLog::EventType eventType, uint64_t sensorId) const;
+    String sensorDisplayName(uint64_t sensorId) const;
     AlarmSystem& _alarmSystem;
     ActivityLog& _activityLog;
     mutable WebServer _server;

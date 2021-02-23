@@ -5,9 +5,16 @@ app.component('event-list-view', {
 <div id="events-list">
     <fieldset>
         <legend>Alarm Events</legend>
-        <div v-for="event in events">
-            {{ event }}
-        </div>
+        <table>
+            <tr v-for="event in events">
+                <td class="timestamp-field event-entry">
+                    {{ event[0] }}
+                </td>
+                <td class="event-entry">
+                    {{ event[1] }}
+                </td>
+            </tr>
+        </table>
     </fieldset>
 </div>
 `,
@@ -24,7 +31,25 @@ app.component('event-list-view', {
                 catch(error => console.log('Failed to get alarm system activity log: ' + error));
         },
         gotEvents(events) {
-            this.events = events.split('\n');
+            this.events = [];
+            var eventList = events.split('\n');
+            for (eventString of eventList)
+            {
+                if (eventString.length == 0)
+                {
+                    continue;
+                }
+                parts = eventString.split(': ')
+                console.log("parts" + parts);
+                var dtString = this.getDateTimeString(parseInt(parts[0]));
+                this.events.push([dtString, parts.slice(1).join(': ')]);
+            }
+        },
+        getDateTimeString(epochTime)
+        {
+            var dt = new Date(0);
+            dt.setUTCSeconds(epochTime);
+            return dt.toLocaleString();
         }
     },
     mounted() {
