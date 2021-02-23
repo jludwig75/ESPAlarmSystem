@@ -33,6 +33,10 @@ void ActivityLog::begin()
         return;
     }
 
+    struct tm t;
+    getLocalTime(&t);
+    _nextId = mktime(&t);
+
     if (!SPIFFS.exists(activityLogFileName))
     {
         log_a("No activity log file found");
@@ -76,10 +80,6 @@ void ActivityLog::begin()
     }
 
     log_a("Loadded %u activities from activity log", _eventsStored);
-
-    struct tm t;
-    getLocalTime(&t);
-    _nextId = mktime(&t);
 }
 
 void ActivityLog::onLoop()
