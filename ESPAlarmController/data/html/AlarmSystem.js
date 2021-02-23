@@ -59,7 +59,7 @@ app.component('alarm-system-view', {
         handleOperationSuccess()
         {
             this.refreshBackendData();
-            this.$emit('state-changed');
+            // this.$emit('state-changed'); Disable for now.
         },
         handleOperationError()
         {

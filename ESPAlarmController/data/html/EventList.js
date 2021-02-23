@@ -8,10 +8,10 @@ app.component('event-list-view', {
         <table>
             <tr v-for="event in events">
                 <td class="timestamp-field event-entry">
-                    {{ event[0] }}
+                    {{ event.dateTime }}
                 </td>
                 <td class="event-entry">
-                    {{ event[1] }}
+                    {{ event.message }}
                 </td>
             </tr>
         </table>
@@ -31,7 +31,6 @@ app.component('event-list-view', {
                 catch(error => console.log('Failed to get alarm system activity log: ' + error));
         },
         gotEvents(events) {
-            this.events = [];
             var eventList = events.split('\n');
             for (eventString of eventList)
             {
@@ -40,9 +39,25 @@ app.component('event-list-view', {
                     continue;
                 }
                 parts = eventString.split(': ')
-                var dtString = this.getDateTimeString(parseInt(parts[0]));
-                this.events.push([dtString, parts.slice(1).join(': ')]);
+                var timestamp = parseInt(parts[0]);
+                var dtString = this.getDateTimeString(timestamp);
+                this.addEvent( {
+                    'timestamp': timestamp,
+                    'dateTime': dtString,
+                    'message': parts.slice(1).join(': ')
+                });
             }
+        },
+        addEvent(newEvent) {
+            for (evt of this.events) {
+                if (newEvent.timestamp == evt.timestamp &&
+                    newEvent.message == evt.message)
+                {
+                    return;   
+                }
+            }
+
+            this.events.push(newEvent);
         },
         getDateTimeString(epochTime)
         {
