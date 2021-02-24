@@ -15,3 +15,6 @@ target_include_directories(AlarmPolicy_uinttest PUBLIC
                             ${PROJECT_SOURCE_DIR}/test/mocks
                             ${PROJECT_SOURCE_DIR}/lib/WavFilePlayer
                             ${PROJECT_SOURCE_DIR}/lib/Logging)
+
+add_test(NAME AlarmPolicy_uinttest
+         COMMAND AlarmPolicy_uinttest)

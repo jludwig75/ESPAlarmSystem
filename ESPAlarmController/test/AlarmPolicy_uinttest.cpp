@@ -14,6 +14,7 @@ SCENARIO( "Test AlarmPolicy::handleSensorState", "" )
     {
         AlarmState state{AlarmState::Disarmed};
         AlarmSensor sensor(1, true, "Front Door", SensorState::Closed);
+        sensor.lastUpdate = 5;
 
         WHEN( "a sensor is reported closed" )
         {
@@ -22,9 +23,23 @@ SCENARIO( "Test AlarmPolicy::handleSensorState", "" )
 
             THEN( "no action is requested" )
             {
-                REQUIRE_FALSE(actions.playSound);
                 REQUIRE_FALSE(actions.triggerAlarm);
                 REQUIRE_FALSE(actions.cancelArming);
+                REQUIRE_FALSE(actions.playSound);
+            }
+        }
+
+        WHEN( "a sensor is reported open" )
+        {
+            AlarmPolicy::Actions actions;
+            policy.handleSensorState(actions, sensor, SensorState::Open, state);
+
+            THEN( "sensor opened chime is played" )
+            {
+                REQUIRE_FALSE(actions.triggerAlarm);
+                REQUIRE_FALSE(actions.cancelArming);
+                REQUIRE(actions.playSound);
+                REQUIRE(actions.sound == SoundPlayer::Sound::SensorChimeOpened);
             }
         }
     }
