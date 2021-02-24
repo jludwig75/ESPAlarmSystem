@@ -22,7 +22,14 @@ int log_printf(const char *format, ...)
     return 0;
 }
 
+static unsigned long upTimeMillis = 0;
+
+void setUptimeMillis(unsigned long ms)
+{
+    upTimeMillis = ms;
+}
+
 unsigned long millis()
 {
-    return 0;
+    return upTimeMillis;
 }
