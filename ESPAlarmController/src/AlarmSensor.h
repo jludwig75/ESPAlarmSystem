@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <map>
 
 #include "protocol.h"
 
@@ -43,6 +44,9 @@ public:
     unsigned long lastUpdate;
     unsigned long faultLastHandled;
 };
+
+
+using SensorMap = std::map<uint64_t, AlarmSensor>;
 
 
 String toString(uint64_t v);

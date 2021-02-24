@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "AlarmOperation.h"
 #include "AlarmSensor.h"
 #include "AlarmState.h"
 #include "protocol.h"
@@ -16,27 +17,23 @@ class AlarmPolicy
 {
 public:
     AlarmPolicy(ActivityLog& log);
-    enum class ActionType
+    struct Actions
     {
-        Nothing,
-        PlaySound,
-        CancelArming,
-        TriggerAlarm
-    };
-    struct Action
-    {
-        Action(ActionType action, SoundPlayer::Sound sound = SoundPlayer::Sound::Silence)
-            :
-            action(action),
-            sound(sound)
+        bool triggerAlarm = false;
+        bool playSound = false;
+        bool cancelArming = false;
+        SoundPlayer::Sound sound = SoundPlayer::Sound::Silence;
+        void requestPlaySound(SoundPlayer::Sound soundToPlay)
         {
+            playSound = true;
+            sound = soundToPlay;
         }
-        ActionType action;
-        SoundPlayer::Sound sound;
     };
-    using Actions = std::vector<Action>;
-    Actions handleSensorState(AlarmSensor& sensor, SensorState::State newState, AlarmState alarmState);
-    Actions checkSensor(AlarmSensor& sensor, AlarmState alarmState);
+    void handleSensorState(Actions& actions, AlarmSensor& sensor, SensorState::State newState, AlarmState alarmState) const;
+    void checkSensor(Actions& actions, AlarmSensor& sensor, AlarmState alarmState) const;
+    bool canArm(const SensorMap& sensors) const;
+    std::vector<AlarmOperation> validOperations(const SensorMap& sensors, AlarmState alarmState) const;
+    bool canModifySensors(AlarmState alarmState) const;
 private:
     ActivityLog& _log;
 };

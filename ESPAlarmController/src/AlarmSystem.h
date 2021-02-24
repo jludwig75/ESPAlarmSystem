@@ -3,6 +3,7 @@
 #include <ESPNowServer.h>
 
 #include "ActivityLog.h"
+#include "AlarmOperation.h"
 #include "AlarmPersistentState.h"
 #include "AlarmPolicy.h"
 #include "AlarmState.h"
@@ -10,26 +11,17 @@
 #include "SensorDb.h"
 #include "SoundPlayer.h"
 
-#include <map>
 #include <vector>
 
-
-using SensorMap = std::map<uint64_t, AlarmSensor>;
 
 class AlarmSystem
 {
 public:
-    enum class Operation
-    {
-        Arm,
-        Disarm,
-        Invalid
-    };
     AlarmSystem(const String& apSSID, const String& apPassword, int bclkPin, int wclkPin, int doutPin);
     bool begin();
     void onLoop();
     AlarmState state() const;
-    std::vector<Operation> validOperations() const;
+    std::vector<AlarmOperation> validOperations() const;
     const SensorMap& sensors() const;
     AlarmSensor* getSensor(uint64_t sensorId);
     const AlarmSensor* getSensor(uint64_t sensorId) const;

@@ -43,32 +43,32 @@ String toString(SensorState::State state)
     }
 }
 
-String toString(AlarmSystem::Operation operation)
+String toString(AlarmOperation operation)
 {
     switch (operation)
     {
-    case AlarmSystem::Operation::Arm:
+    case AlarmOperation::Arm:
         return "Arm";
-    case AlarmSystem::Operation::Disarm:
+    case AlarmOperation::Disarm:
         return "Disarm";
     default:
         return "INVALID";
     }
 }
 
-AlarmSystem::Operation operationFromString(const String& str)
+AlarmOperation operationFromString(const String& str)
 {
-    if (str == toString(AlarmSystem::Operation::Arm))
+    if (str == toString(AlarmOperation::Arm))
     {
-        return AlarmSystem::Operation::Arm;
+        return AlarmOperation::Arm;
     }
 
-    if (str == toString(AlarmSystem::Operation::Disarm))
+    if (str == toString(AlarmOperation::Disarm))
     {
-        return AlarmSystem::Operation::Disarm;
+        return AlarmOperation::Disarm;
     }
 
-    return AlarmSystem::Operation::Invalid;
+    return AlarmOperation::Invalid;
 }
 
 }
@@ -129,7 +129,7 @@ void AlarmSystemWebServer::handlePostOperation()
     auto operation = operationFromString(operationString);
     switch (operation)
     {
-    case AlarmSystem::Operation::Arm:
+    case AlarmOperation::Arm:
         if (!_alarmSystem.canArm())
         {
             _server.send(405, "text/plain", "Alarm system cannot be armed. Sensors opened or faulted");
@@ -144,7 +144,7 @@ void AlarmSystemWebServer::handlePostOperation()
 
         _server.send(200, "text/plain", "OK");
         return;
-    case AlarmSystem::Operation::Disarm:
+    case AlarmOperation::Disarm:
         _alarmSystem.disarm();
         _server.send(200, "text/plain", "OK");
         return;

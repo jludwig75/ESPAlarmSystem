@@ -191,22 +191,9 @@ AlarmState AlarmSystem::state() const
     return _alarmState;
 }
 
-std::vector<AlarmSystem::Operation> AlarmSystem::validOperations() const
+std::vector<AlarmOperation> AlarmSystem::validOperations() const
 {
-    switch (_alarmState)
-    {
-    case AlarmState::Disarmed:
-        if (canArm())
-        {
-            return { Operation::Arm };
-        }
-        return {};
-    case AlarmState::Arming:
-    case AlarmState::Armed:
-    case AlarmState::AlarmTriggered:
-    default:
-        return { Operation::Disarm };
-    }
+    return _policy.validOperations(_sensors, _alarmState);
 }
 
 const SensorMap& AlarmSystem::sensors() const
@@ -232,9 +219,9 @@ const AlarmSensor* AlarmSystem::getSensor(uint64_t sensorId) const
 
 bool AlarmSystem::updateSensor(AlarmSensor& sensor)
 {
-    if (_alarmState != AlarmState::Disarmed)
+    if (!_policy.canModifySensors(_alarmState))
     {
-        log_e("Changes to sensors only allowed when alarm system is disarmed");
+        log_e("Cannot change sesors now");
         return false;
     }
 
@@ -244,26 +231,7 @@ bool AlarmSystem::updateSensor(AlarmSensor& sensor)
 
 bool AlarmSystem::canArm() const
 {
-    if (_sensors.empty())
-    {
-        return false;
-    }
-
-    auto enabledSensors = 0;
-    for (auto pair : _sensors)
-    {
-        const auto& sensor = pair.second;
-        if (sensor.enabled)
-        {
-            if (sensor.state != SensorState::Closed)
-            {
-                return false;
-            }
-            enabledSensors++;
-        }
-    }
-
-    return enabledSensors > 0;
+    return _policy.canArm(_sensors);
 }
 
 bool AlarmSystem::arm()
@@ -402,57 +370,57 @@ void AlarmSystem::updateSensorState(uint64_t sensorId, SensorState::State newSta
 
 void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newState)
 {
-    handleAlarmPolicyActions(_policy.handleSensorState(sensor, newState, _alarmState));
+    AlarmPolicy::Actions actions;
+    _policy.handleSensorState(actions, sensor, newState, _alarmState);
 }
 
 void AlarmSystem::checkSensors()
 {
     for (auto& pair : _sensors)
     {
-        handleAlarmPolicyActions(_policy.checkSensor(pair.second, _alarmState));
+        AlarmPolicy::Actions actions;
+        _policy.checkSensor(actions, pair.second, _alarmState);
     }
 }
 
 void AlarmSystem::handleAlarmPolicyActions(const AlarmPolicy::Actions& actions)
 {
-    for (const auto& action : actions)
+    if (actions.playSound)
     {
-        switch (action.action)
+        if (!_soundPlayer.playSound(actions.sound))
         {
-        case AlarmPolicy::ActionType::PlaySound:
-            if (!_soundPlayer.playSound(action.sound))
-            {
-                log_e("Failed to play sound");
-            }
-            break;
-        case AlarmPolicy::ActionType::TriggerAlarm:
-            _alarmState = AlarmState::AlarmTriggered;
-            log_a("ALARM: Sounding alarm!");
-            if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmSouding))
-            {
-                log_e("Failed to play sound");
-            }
-            log_i("Persisting alarm state as triggered");
-            if (!_flashState.set(AlarmPersistentState::AlarmState::Triggerd))
-            {
-                log_e("Failed to persist alarm state!");
-                // Don't fail.
-                // TODO: Somehow let the user know this. This should be shown in the web UI.
-            }
-            break;
-        case AlarmPolicy::ActionType::CancelArming:
-            if (_alarmState != AlarmState::Arming)
-            {
-                log_e("Invaluid request to cancel arming when alarm system is not arming");
-            }
-            else
-            {
-                _soundPlayer.silence();
-                _alarmState = AlarmState::Disarmed;
-                log_a("FAULT: Alarm disarmed");
-            }
-        default:
-            break;
+            log_e("Failed to play sound");
+        }
+    }
+
+    if (actions.triggerAlarm)
+    {
+        _alarmState = AlarmState::AlarmTriggered;
+        log_a("ALARM: Sounding alarm!");
+        if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmSouding))
+        {
+            log_e("Failed to play sound");
+        }
+        log_i("Persisting alarm state as triggered");
+        if (!_flashState.set(AlarmPersistentState::AlarmState::Triggerd))
+        {
+            log_e("Failed to persist alarm state!");
+            // Don't fail.
+            // TODO: Somehow let the user know this. This should be shown in the web UI.
+        }
+    }
+
+    if (actions.cancelArming)
+    {
+        if (_alarmState != AlarmState::Arming)
+        {
+            log_e("Invaluid request to cancel arming when alarm system is not arming");
+        }
+        else
+        {
+            _soundPlayer.silence();
+            _alarmState = AlarmState::Disarmed;
+            log_a("FAULT: Alarm disarmed");
         }
     }
 }
