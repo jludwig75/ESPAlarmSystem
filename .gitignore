@@ -1,8 +1,10 @@
+ESPAlarmController/build
 ESPAlarmController/pio
 ESPAlarmController/vscode/.browse.c_cpp.db*
 ESPAlarmController/vscode/c_cpp_properties.json
 ESPAlarmController/vscode/launch.json
 ESPAlarmController/vscode/ipch
+ESPContactSensor/build
 ESPContactSensor/pio
 ESPContactSensor/vscode/.browse.c_cpp.db*
 ESPContactSensor/vscode/c_cpp_properties.json
