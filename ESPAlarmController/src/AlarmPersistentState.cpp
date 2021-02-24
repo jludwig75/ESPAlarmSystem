@@ -1,5 +1,6 @@
 #include "AlarmPersistentState.h"
 
+#include <AutoFile.h>
 #include <Logging.h>
 #include <SPIFFS.h>
 #include <WString.h>
@@ -33,14 +34,14 @@ bool AlarmPersistentState::begin()
         return true;
     }
 
-    auto stateFile = SPIFFS.open(alarmStateFileName, FILE_READ);
+    auto stateFile = AutoFile(SPIFFS.open(alarmStateFileName, FILE_READ));
     if (!stateFile)
     {
         log_e("Error opening alram state file");
         return false;
     }
 
-    if (!stateFile.read(reinterpret_cast<uint8_t*>(&_state), sizeof(_state)))
+    if (!stateFile->read(reinterpret_cast<uint8_t*>(&_state), sizeof(_state)))
     {
         log_e("Error reading alarm state file");
         return false;
@@ -67,19 +68,17 @@ AlarmPersistentState::AlarmState AlarmPersistentState::get() const
 
 bool AlarmPersistentState::set(AlarmState state)
 {
-    auto stateFile = SPIFFS.open(alarmStateFileName, FILE_WRITE);
+    auto stateFile = AutoFile(SPIFFS.open(alarmStateFileName, FILE_WRITE));
     if (!stateFile)
     {
         log_e("Error creating alram state file");
         return false;
     }
 
-    if (!stateFile.write(reinterpret_cast<const uint8_t*>(&state), sizeof(state)))
+    if (!stateFile->write(reinterpret_cast<const uint8_t*>(&state), sizeof(state)))
     {
         log_e("Error reading alarm state file");
     }
-
-    stateFile.close();
 
     _state = state;
     return true;

@@ -372,6 +372,7 @@ void AlarmSystem::handleSensorState(AlarmSensor& sensor, SensorState::State newS
 {
     AlarmPolicy::Actions actions;
     _policy.handleSensorState(actions, sensor, newState, _alarmState);
+    handleAlarmPolicyActions(actions);
 }
 
 void AlarmSystem::checkSensors()
@@ -380,6 +381,7 @@ void AlarmSystem::checkSensors()
     {
         AlarmPolicy::Actions actions;
         _policy.checkSensor(actions, pair.second, _alarmState);
+        handleAlarmPolicyActions(actions);
     }
 }
 

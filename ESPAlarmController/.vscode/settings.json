@@ -9,6 +9,7 @@
         "vector": "cpp",
         "initializer_list": "cpp",
         "*.tcc": "cpp",
-        "stdlib_noniso.h": "c"
+        "stdlib_noniso.h": "c",
+        "bitset": "cpp"
     }
 }

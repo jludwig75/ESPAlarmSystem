@@ -1,6 +1,7 @@
 #include "SensorDb.h"
 
 #include <ArduinoJson.h>
+#include <AutoFile.h>
 #include <Logging.h>
 #include <SPIFFS.h>
 
@@ -45,11 +46,15 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
 {
     if (!_listLoaded)
     {
-        auto dbFile = SPIFFS.open(sensorDbFileName, FILE_READ);
+        auto dbFile = AutoFile(SPIFFS.open(sensorDbFileName, FILE_READ));
+        if (!dbFile)
+        {
+            log_e("Failed to open sensor database file");
+            return false;
+        }
 
         StaticJsonDocument<1024> doc;
-        auto error = deserializeJson(doc, dbFile);
-        dbFile.close();
+        auto error = deserializeJson(doc, *dbFile);
         if (error)
         {
             log_e("Failed to parse sensor DB file");
@@ -168,7 +173,7 @@ bool SensorDataBase::updateSensor(const AlarmSensor& sensor)
 
 bool SensorDataBase::writeDbFile(const SensorList& sensors)
 {
-    auto dbFile = SPIFFS.open(sensorDbFileName, FILE_WRITE);
+    auto dbFile = AutoFile(SPIFFS.open(sensorDbFileName, FILE_WRITE));
     if (!dbFile)
     {
         log_e("Failed to create sensor database file");
@@ -187,8 +192,7 @@ bool SensorDataBase::writeDbFile(const SensorList& sensors)
     }
 
     // TODO: Check for and handle file write errors.
-    serializeJson(doc, dbFile);
-    dbFile.close();
+    serializeJson(doc, *dbFile);
 
     return true;
 }

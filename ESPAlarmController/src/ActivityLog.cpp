@@ -1,5 +1,6 @@
 #include "ActivityLog.h"
 
+#include <AutoFile.h>
 #include <Logging.h>
 #include <SPIFFS.h>
 
@@ -43,14 +44,14 @@ void ActivityLog::begin()
         return;
     }
 
-    auto activityLogFile = SPIFFS.open(activityLogFileName, FILE_READ);
+    auto activityLogFile = AutoFile(SPIFFS.open(activityLogFileName, FILE_READ));
     if (!activityLogFile)
     {
         log_e("Error opening activity log file");
         return;
     }
 
-    if (!activityLogFile.read(reinterpret_cast<uint8_t*>(&_log), sizeof(_log)))
+    if (!activityLogFile->read(reinterpret_cast<uint8_t*>(&_log), sizeof(_log)))
     {
         log_e("Error reading from activity log file");
         memset(_log, 0, sizeof(_log));
@@ -189,14 +190,14 @@ void ActivityLog::flush()
 {
     log_d("Saving %u activities from activity log", _eventsStored);
 
-    auto activityLogFile = SPIFFS.open(activityLogFileName, FILE_WRITE);
+    auto activityLogFile = AutoFile(SPIFFS.open(activityLogFileName, FILE_WRITE));
     if (!activityLogFile)
     {
         log_e("Error creating activity log file");
         return;
     }
 
-    if (!activityLogFile.write(reinterpret_cast<const uint8_t*>(&_log), sizeof(_log)))
+    if (!activityLogFile->write(reinterpret_cast<const uint8_t*>(&_log), sizeof(_log)))
     {
         log_e("Error writing to activity log file");
         return;
