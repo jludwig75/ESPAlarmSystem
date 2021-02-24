@@ -230,3 +230,167 @@ SCENARIO( "Test AlarmPolicy::handleSensorState", "" )
         }
     }
 }
+
+SCENARIO( "Test AlarmPolicy::canArm", "" )
+{
+    ActivityLog log;
+    AlarmPolicy policy(log);
+
+    GIVEN( "no sensors" )
+    {
+        SensorMap sensors;
+
+        WHEN( "canArm is called" )
+        {
+            THEN( "the system cannot be armned" )
+            {
+                REQUIRE_FALSE(policy.canArm(sensors));
+            }
+        }
+    }
+
+    GIVEN( "a single disabled sensor" )
+    {
+        const uint64_t testSensorId = 1;
+        AlarmSensor sensor(testSensorId, false, "Front Door", SensorState::Unknown);
+        SensorMap sensors = { {sensor.id, sensor} };
+
+        WHEN( "the sensor is in an known state" )
+        {
+            sensors[testSensorId].state = SensorState::Unknown;
+
+            THEN( "the system cannot be armned" )
+            {
+                REQUIRE_FALSE(policy.canArm(sensors));
+            }
+        }
+
+        WHEN( "the sensor is in an open state" )
+        {
+            sensors[testSensorId].state = SensorState::Unknown;
+
+            THEN( "the system cannot be armned" )
+            {
+                REQUIRE_FALSE(policy.canArm(sensors));
+            }
+        }
+
+        WHEN( "the sensor is in a closed state" )
+        {
+            sensors[testSensorId].state = SensorState::Closed;
+
+            THEN( "the system cannot be armned" )
+            {
+                REQUIRE_FALSE(policy.canArm(sensors));
+            }
+        }
+    }
+
+    GIVEN( "a single enabled sensor" )
+    {
+        const uint64_t testSensorId = 1;
+        AlarmSensor sensor(testSensorId, true, "Front Door", SensorState::Unknown);
+        SensorMap sensors = { {sensor.id, sensor} };
+
+        WHEN( "the sensor is in an known state" )
+        {
+            sensors[testSensorId].state = SensorState::Unknown;
+
+            THEN( "the system cannot be armned" )
+            {
+                REQUIRE_FALSE(policy.canArm(sensors));
+            }
+        }
+
+        WHEN( "the sensor is in an open state" )
+        {
+            sensors[testSensorId].state = SensorState::Open;
+
+            THEN( "the system cannot be armned" )
+            {
+                REQUIRE_FALSE(policy.canArm(sensors));
+            }
+        }
+
+        WHEN( "the sensor is in a closed state" )
+        {
+            sensors[testSensorId].state = SensorState::Closed;
+
+            THEN( "the system can be armned" )
+            {
+                REQUIRE(policy.canArm(sensors));
+            }
+        }
+    }
+
+    GIVEN( "two sensors" )
+    {
+        const uint64_t testSensor1Id = 1;
+        const uint64_t testSensor2Id = 1111;
+        AlarmSensor sensor1(testSensor1Id, true, "Front Door", SensorState::Closed);
+        AlarmSensor sensor2(testSensor2Id, true, "Back Door", SensorState::Closed);
+        SensorMap sensors = { {sensor1.id, sensor1}, {sensor2.id, sensor2} };
+
+        WHEN( "one sensor is enabeld and opened and one sensor is disabled" )
+        {
+            sensors[testSensor1Id].state = SensorState::Open;
+            sensors[testSensor1Id].enabled = true;
+
+            sensors[testSensor2Id].enabled = false;
+
+            THEN( "the system cannot be armned" )
+            {
+                REQUIRE_FALSE(policy.canArm(sensors));
+            }
+        }
+
+        WHEN( "one sensor is enabeld and closed and one sensor is disabled" )
+        {
+            sensors[testSensor1Id].state = SensorState::Closed;
+            sensors[testSensor1Id].enabled = true;
+
+            sensors[testSensor2Id].enabled = false;
+
+            THEN( "the system can be armned" )
+            {
+                REQUIRE(policy.canArm(sensors));
+            }
+        }
+
+        WHEN( "both sensors are enabeld and closed" )
+        {
+            sensors[testSensor1Id].state = SensorState::Closed;
+            sensors[testSensor1Id].enabled = true;
+
+            sensors[testSensor2Id].state = SensorState::Closed;
+            sensors[testSensor2Id].enabled = true;
+
+            THEN( "the system can be armned" )
+            {
+                REQUIRE(policy.canArm(sensors));
+            }
+        }
+    }
+}
+
+/*
+        {
+            "name": "(gdb) Launch AlarmPolicy_uinttest",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/test/AlarmPolicy_uinttest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal",
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+*/
