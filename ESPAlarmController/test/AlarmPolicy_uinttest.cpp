@@ -6,6 +6,8 @@
 #include "AlarmState.h"
 #include "mockControl.h"
 
+#include <algorithm>
+
 
 SCENARIO( "Test AlarmPolicy::handleSensorState", "" )
 {
@@ -369,6 +371,111 @@ SCENARIO( "Test AlarmPolicy::canArm", "" )
             {
                 REQUIRE(policy.canArm(sensors));
             }
+        }
+    }
+}
+
+SCENARIO( "Test AlarmPolicy::validOperations", "" )
+{
+    ActivityLog log;
+    AlarmPolicy policy(log);
+
+    const uint64_t testSensor1Id = 1;
+    const uint64_t testSensor2Id = 1111;
+    AlarmSensor sensor1(testSensor1Id, true, "Front Door", SensorState::Closed);
+    AlarmSensor sensor2(testSensor2Id, true, "Back Door", SensorState::Closed);
+    SensorMap sensors = { {sensor1.id, sensor1}, {sensor2.id, sensor2} };
+
+    WHEN( "alarm system is disarmed and the sensors in an armable state" )
+    {
+        sensors[testSensor1Id].state = SensorState::Closed;
+        sensors[testSensor2Id].state = SensorState::Closed;
+        THEN( "the system can be armed" )
+        {
+            auto validOperations = policy.validOperations(sensors, AlarmState::Disarmed);
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Arm) != validOperations.end() );
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Disarm) == validOperations.end() );
+        }
+    }
+
+    WHEN( "alarm system is disarmed and the sensors not in an armable state" )
+    {
+        sensors[testSensor1Id].state = SensorState::Closed;
+        sensors[testSensor2Id].state = SensorState::Open;
+        THEN( "the system cannot be armed or disarmed" )
+        {
+            auto validOperations = policy.validOperations(sensors, AlarmState::Disarmed);
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Arm) == validOperations.end() );
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Disarm) == validOperations.end() );
+            REQUIRE( validOperations.empty() );
+        }
+    }
+
+    WHEN( "alarm system is armed" )
+    {
+        THEN( "the system can be disarmed" )
+        {
+            auto validOperations = policy.validOperations(sensors, AlarmState::Armed);
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Arm) == validOperations.end() );
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Disarm) != validOperations.end() );
+        }
+    }
+
+    WHEN( "alarm system is arming" )
+    {
+        THEN( "the system can be disarmed" )
+        {
+            auto validOperations = policy.validOperations(sensors, AlarmState::Arming);
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Arm) == validOperations.end() );
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Disarm) != validOperations.end() );
+        }
+    }
+
+    WHEN( "alarm is triggered" )
+    {
+        THEN( "the system can be disarmed" )
+        {
+            auto validOperations = policy.validOperations(sensors, AlarmState::AlarmTriggered);
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Arm) == validOperations.end() );
+            REQUIRE( std::find(validOperations.begin(), validOperations.end(), AlarmOperation::Disarm) != validOperations.end() );
+        }
+    }
+}
+
+SCENARIO( "Test AlarmPolicy::canModifySensors", "" )
+{
+    ActivityLog log;
+    AlarmPolicy policy(log);
+
+    WHEN( "alarm system is disarmed" )
+    {
+        THEN( "Sensors can be modified" )
+        {
+            REQUIRE(policy.canModifySensors(AlarmState::Disarmed));
+        }
+    }
+
+    WHEN( "alarm system is armed" )
+    {
+        THEN( "Sensors cannot be modified" )
+        {
+            REQUIRE_FALSE(policy.canModifySensors(AlarmState::Armed));
+        }
+    }
+
+    WHEN( "alarm system is arming" )
+    {
+        THEN( "Sensors cannot be modified" )
+        {
+            REQUIRE_FALSE(policy.canModifySensors(AlarmState::Arming));
+        }
+    }
+
+    WHEN( "alarm is triggered" )
+    {
+        THEN( "Sensors cannot be modified" )
+        {
+            REQUIRE_FALSE(policy.canModifySensors(AlarmState::AlarmTriggered));
         }
     }
 }
