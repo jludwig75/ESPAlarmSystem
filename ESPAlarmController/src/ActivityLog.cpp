@@ -187,7 +187,7 @@ bool ActivityLog::getEvent(size_t i, unsigned long& id, time_t& eventTime, Event
 
 void ActivityLog::flush()
 {
-    log_i("Saving %u activities from activity log", _eventsStored);
+    log_d("Saving %u activities from activity log", _eventsStored);
 
     auto activityLogFile = SPIFFS.open(activityLogFileName, FILE_WRITE);
     if (!activityLogFile)
@@ -202,7 +202,7 @@ void ActivityLog::flush()
         return;
     }
 
-    log_a("Saved %u activities from activity log", _eventsStored);
+    log_i("Saved %u activities from activity log", _eventsStored);
 
     _lastFlushTime = millis();
     _dirty = false;

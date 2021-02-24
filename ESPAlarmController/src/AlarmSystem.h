@@ -1,11 +1,14 @@
 #pragma once
 
-#include <ActivityLog.h>
-#include <AlarmPersistentState.h>
-#include <AlarmWebServer.h>
-#include <SensorDb.h>
 #include <ESPNowServer.h>
-#include <SoundPlayer.h>
+
+#include "ActivityLog.h"
+#include "AlarmPersistentState.h"
+#include "AlarmPolicy.h"
+#include "AlarmState.h"
+#include "AlarmWebServer.h"
+#include "SensorDb.h"
+#include "SoundPlayer.h"
 
 #include <map>
 #include <vector>
@@ -16,13 +19,6 @@ using SensorMap = std::map<uint64_t, AlarmSensor>;
 class AlarmSystem
 {
 public:
-    enum class State
-    {
-        Disarmed,
-        Arming,
-        Armed,
-        AlarmTriggered
-    };
     enum class Operation
     {
         Arm,
@@ -32,7 +28,7 @@ public:
     AlarmSystem(const String& apSSID, const String& apPassword, int bclkPin, int wclkPin, int doutPin);
     bool begin();
     void onLoop();
-    State state() const;
+    AlarmState state() const;
     std::vector<Operation> validOperations() const;
     const SensorMap& sensors() const;
     AlarmSensor* getSensor(uint64_t sensorId);
@@ -48,6 +44,7 @@ private:
     // TODO: The nex two methods need to be moved to a policy class:
     void handleSensorState(AlarmSensor& sensor, SensorState::State newState);
     void checkSensors();
+    void handleAlarmPolicyActions(const AlarmPolicy::Actions& actions);
     void loadAlarmSensorsFromDb();
     void loadPersistedState();
     void initTime();
@@ -58,7 +55,8 @@ private:
     AlarmPersistentState _flashState;
     ActivityLog _log;
     SensorMap _sensors;    // Well slap me! I used and STL container in FW code!
-    State _alarmState;
+    AlarmPolicy _policy;
+    AlarmState _alarmState;
     unsigned long _lastCheck;
     struct SensorEventMessage
     {

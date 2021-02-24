@@ -10,17 +10,17 @@
 namespace
 {
 
-String toString(AlarmSystem::State state)
+String toString(AlarmState state)
 {
     switch (state)
     {
-    case AlarmSystem::State::Disarmed:
+    case AlarmState::Disarmed:
         return "Disarmed";
-    case AlarmSystem::State::Arming:
+    case AlarmState::Arming:
         return "Arming";
-    case AlarmSystem::State::Armed:
+    case AlarmState::Armed:
         return "Armed";
-    case AlarmSystem::State::AlarmTriggered:
+    case AlarmState::AlarmTriggered:
         return "AlarmTriggered";
     default:
         return "UNKNOWN";
@@ -206,7 +206,7 @@ void AlarmSystemWebServer::handleGetSensor() const
 
 void AlarmSystemWebServer::handleUpdateSensor()
 {
-    if (_alarmSystem.state() != AlarmSystem::State::Disarmed)
+    if (_alarmSystem.state() != AlarmState::Disarmed)
     {
         _server.send(405, "text/plain", "Sensors can only be modified when the alarm system is disarmed");
         return;
