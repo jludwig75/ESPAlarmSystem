@@ -12,6 +12,7 @@ class ESPNowServer
 {
 public:
     ESPNowServer(const String& apSSID, const String& apPassword, OnReceiveCallback);
+    ~ESPNowServer();
     bool begin();
 protected:
     static void onDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len);

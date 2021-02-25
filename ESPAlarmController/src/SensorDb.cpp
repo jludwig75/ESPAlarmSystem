@@ -75,7 +75,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
                 log_e("Sensor database file sensor object has no \"id\" key");
                 return false;
             }
-            auto idString = sensor["id"].as<String>();
+            auto idString = sensor["id"].as<const char *>();
             uint64_t id;
             if (!fromString(idString, id))
             {
@@ -86,7 +86,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
             bool enabled = false;
             if (sensor.containsKey("enabled"))
             {
-                auto enabledString = sensor["enabled"].as<String>();
+                auto enabledString = sensor["enabled"].as<const char *>();
                 if (enabledString == "true")
                 {
                     enabled = true;
@@ -101,7 +101,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
             String name;
             if (sensor.containsKey("name"))
             {
-                name = sensor["name"].as<String>();
+                name = sensor["name"].as<const char *>();
             }
 
             _sensors.push_back(AlarmSensor(id, enabled, name, SensorState::Unknown));
@@ -186,9 +186,9 @@ bool SensorDataBase::writeDbFile(const SensorList& sensors)
     {
         auto sensorObj = arrayData.createNestedObject();
 
-        sensorObj["id"] = toString(sensor.id);
-        sensorObj["enabled"] = String(sensor.enabled ? "true" : "false");
-        sensorObj["name"] = sensor.name;
+        sensorObj["id"] = toString(sensor.id).c_str();
+        sensorObj["enabled"] = String(sensor.enabled ? "true" : "false").c_str();
+        sensorObj["name"] = sensor.name.c_str();
     }
 
     // TODO: Check for and handle file write errors.

@@ -227,7 +227,14 @@ bool AlarmSystem::updateSensor(AlarmSensor& sensor)
         return false;
     }
 
-    return _sensorDb.updateSensor(sensor);
+    auto it = _sensors.find(sensor.id);
+    if (it == _sensors.end())
+    {
+        return false;
+    }
+    it->second = sensor;
+
+    return _sensorDb.updateSensor(it->second);  // Use the stored object to catch any bugs
 }
 
 

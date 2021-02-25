@@ -23,6 +23,12 @@ ESPNowServer::ESPNowServer(const String& apSSID, const String& apPassword, OnRec
     _this = this;
 }
 
+ESPNowServer::~ESPNowServer()
+{
+    _this = nullptr;
+}
+
+
 bool ESPNowServer::begin()
 {
     log_a("ESP Board MAC Address: %s", WiFi.macAddress().c_str());
