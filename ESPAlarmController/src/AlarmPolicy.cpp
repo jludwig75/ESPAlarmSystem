@@ -36,7 +36,7 @@ void AlarmPolicy::handleSensorState(Actions& actions, AlarmSensor& sensor, Senso
         }
         else if (newState == SensorState::Fault)
         {
-            if (millis() - sensor.faultLastHandled > SENSOR_FAULT_CHIME_INTERVAL_MS)
+            if (millis() - sensor.faultLastHandled >= SENSOR_FAULT_CHIME_INTERVAL_MS)
             {
                 actions.requestPlaySound(SoundPlayer::Sound::SensorFault);
                 sensor.faultLastHandled = millis();
@@ -73,7 +73,7 @@ void AlarmPolicy::checkSensor(Actions& actions, AlarmSensor& sensor, AlarmState 
 
     auto timeSinceLastUpdate = millis() - sensor.lastUpdate;
     auto timeout = alarmState == AlarmState::Armed ? MAX_SENSOR_UPDATE_TIMEOUT_ARMED_MS : MAX_SENSOR_UPDATE_TIMEOUT_DISARMED_MS;
-    if (timeSinceLastUpdate > timeout)
+    if (timeSinceLastUpdate >= timeout)
     {
         log_a("FAULT: Sensor %016llX has not updated in over %lu seconds", sensor.id, timeSinceLastUpdate / 1000);
 
@@ -87,7 +87,7 @@ void AlarmPolicy::checkSensor(Actions& actions, AlarmSensor& sensor, AlarmState 
             _log.logEvent(ActivityLog::EventType::AlarmArmingFailed, sensor.id);
             /* Fall through */
         case AlarmState::Disarmed:
-            if (millis() - sensor.faultLastHandled > SENSOR_FAULT_CHIME_INTERVAL_MS)
+            if (millis() - sensor.faultLastHandled >= SENSOR_FAULT_CHIME_INTERVAL_MS)
             {
                 actions.requestPlaySound(SoundPlayer::Sound::SensorFault);
                 sensor.faultLastHandled = millis();
@@ -115,7 +115,7 @@ void AlarmPolicy::checkSensor(Actions& actions, AlarmSensor& sensor, AlarmState 
         if (sensor.state == SensorState::Fault && alarmState == AlarmState::Disarmed)
         {
             log_a("FAULT: Sensor %016llX fault", sensor.id);
-            if (millis() - sensor.faultLastHandled > SENSOR_FAULT_CHIME_INTERVAL_MS)
+            if (millis() - sensor.faultLastHandled >= SENSOR_FAULT_CHIME_INTERVAL_MS)
             {
                 actions.requestPlaySound(SoundPlayer::Sound::SensorFault);
                 sensor.faultLastHandled = millis();

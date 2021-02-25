@@ -480,6 +480,138 @@ SCENARIO( "Test AlarmPolicy::canModifySensors", "" )
     }
 }
 
+SCENARIO( "Test AlarmPolicy::checkSensor", "" )
+{
+    ActivityLog log;
+    AlarmPolicy policy(log);
+
+    GIVEN( "A disabled sensor that hasn't reported in longer than the max timer interval" )
+    {
+        AlarmSensor sensor(2342, false, "Back Door", SensorState::Closed);
+
+        sensor.lastUpdate = 5;
+        setUptimeMillis(MAX_SENSOR_UPDATE_TIMEOUT_ARMED_MS + sensor.lastUpdate);
+
+        WHEN( "the sensor is checked and and the alarm system is armed" )
+        {
+            AlarmPolicy::Actions actions;
+            policy.checkSensor(actions, sensor, AlarmState::Armed);
+
+            THEN( "no action is requested" )
+            {
+                REQUIRE_FALSE(actions.triggerAlarm);
+                REQUIRE_FALSE(actions.cancelArming);
+                REQUIRE_FALSE(actions.playSound);
+            }
+        }
+    }
+
+    GIVEN( "An enabled sensor that hasn't reported in longer than the max timer interval" )
+    {
+        AlarmSensor sensor(2342, true, "Back Door", SensorState::Closed);
+
+        sensor.lastUpdate = 5;
+        setUptimeMillis(MAX_SENSOR_UPDATE_TIMEOUT_ARMED_MS + sensor.lastUpdate + 10);
+
+        WHEN( "the sensor is checked and and the alarm system is armed" )
+        {
+            AlarmPolicy::Actions actions;
+            policy.checkSensor(actions, sensor, AlarmState::Armed);
+
+            THEN( "the alarm is triggered" )
+            {
+                REQUIRE(actions.triggerAlarm);
+                REQUIRE_FALSE(actions.cancelArming);
+                REQUIRE_FALSE(actions.playSound);
+            }
+        }
+
+        WHEN( "the sensor is checked and and the alarm system is arming" )
+        {
+            setUptimeMillis(MAX_SENSOR_UPDATE_TIMEOUT_DISARMED_MS + sensor.lastUpdate + 10);
+
+            AlarmPolicy::Actions actions;
+            policy.checkSensor(actions, sensor, AlarmState::Arming);
+
+            THEN( "arming is cancelled and a fault sound is played" )
+            {
+                REQUIRE_FALSE(actions.triggerAlarm);
+                REQUIRE(actions.cancelArming);
+                REQUIRE(actions.playSound);
+                REQUIRE(actions.sound == SoundPlayer::Sound::SensorFault);
+            }
+        }
+
+        WHEN( "the sensor is checked and and the alarm system is disarmed" )
+        {
+            setUptimeMillis(MAX_SENSOR_UPDATE_TIMEOUT_DISARMED_MS + sensor.lastUpdate + 10);
+
+            AlarmPolicy::Actions actions;
+            policy.checkSensor(actions, sensor, AlarmState::Disarmed);
+
+            THEN( "a fault sound is played" )
+            {
+                REQUIRE_FALSE(actions.triggerAlarm);
+                REQUIRE_FALSE(actions.cancelArming);
+                REQUIRE(actions.playSound);
+                REQUIRE(actions.sound == SoundPlayer::Sound::SensorFault);
+            }
+        }
+    }
+
+    GIVEN( "A sensor in fault" )
+    {
+        AlarmSensor sensor(2342, true, "Back Door", SensorState::Fault);
+
+        WHEN( "the sensor is checked and and the alarm system is disarmed" )
+        {
+            AlarmPolicy::Actions actions;
+            policy.checkSensor(actions, sensor, AlarmState::Disarmed);
+
+            THEN( "a fault sound is played" )
+            {
+                REQUIRE_FALSE(actions.triggerAlarm);
+                REQUIRE_FALSE(actions.cancelArming);
+                REQUIRE(actions.playSound);
+                REQUIRE(actions.sound == SoundPlayer::Sound::SensorFault);
+            }
+
+            WHEN( "the sensor is checked again within the fault update interval" )
+            {
+                sensor.faultLastHandled = 10;
+                setUptimeMillis((SENSOR_FAULT_CHIME_INTERVAL_MS - 5) + sensor.faultLastHandled);
+
+                AlarmPolicy::Actions actions;
+                policy.checkSensor(actions, sensor, AlarmState::Disarmed);
+
+                THEN( "no action is requested" )
+                {
+                    REQUIRE_FALSE(actions.triggerAlarm);
+                    REQUIRE_FALSE(actions.cancelArming);
+                    REQUIRE_FALSE(actions.playSound);
+                }
+            }
+
+            WHEN( "the sensor is checked again after the fault update interval" )
+            {
+                sensor.faultLastHandled = 10;
+                setUptimeMillis((SENSOR_FAULT_CHIME_INTERVAL_MS + 5) + sensor.faultLastHandled);
+
+                AlarmPolicy::Actions actions;
+                policy.checkSensor(actions, sensor, AlarmState::Disarmed);
+
+                THEN( "a fault sound is played" )
+                {
+                    REQUIRE_FALSE(actions.triggerAlarm);
+                    REQUIRE_FALSE(actions.cancelArming);
+                    REQUIRE(actions.playSound);
+                    REQUIRE(actions.sound == SoundPlayer::Sound::SensorFault);
+                }
+            }
+        }
+    }
+}
+
 /*
         {
             "name": "(gdb) Launch AlarmPolicy_uinttest",
