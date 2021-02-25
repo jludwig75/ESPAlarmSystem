@@ -127,11 +127,14 @@ private:
     const size_t _itemSize;
 };
 
+std::vector<std::unique_ptr<Queue>> queues;
 
 QueueHandle_t xQueueCreate( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize )
 {
-    // This will leak. TODO: Add somethig to manage this.
-    return new Queue(uxQueueLength, uxItemSize);
+    queues.push_back(std::make_unique<Queue>(uxQueueLength, uxItemSize));
+
+    // This is ugly, but it won't go away until the process exits
+    return queues.back().get();
 }
 
 BaseType_t xQueueSend( QueueHandle_t xQueue, const void * const pvItemToQueue, TickType_t xTicksToWait )
