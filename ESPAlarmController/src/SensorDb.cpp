@@ -75,7 +75,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
                 log_e("Sensor database file sensor object has no \"id\" key");
                 return false;
             }
-            auto idString = sensor["id"].as<const char *>();
+            String idString = sensor["id"].as<const char *>();
             uint64_t id;
             if (!fromString(idString, id))
             {
@@ -86,7 +86,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
             bool enabled = false;
             if (sensor.containsKey("enabled"))
             {
-                auto enabledString = sensor["enabled"].as<const char *>();
+                String enabledString = sensor["enabled"].as<const char *>();
                 if (enabledString == "true")
                 {
                     enabled = true;
