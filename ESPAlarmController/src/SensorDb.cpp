@@ -187,7 +187,7 @@ bool SensorDataBase::writeDbFile(const SensorList& sensors)
         auto sensorObj = arrayData.createNestedObject();
 
         sensorObj["id"] = toString(sensor.id).c_str();
-        sensorObj["enabled"] = String(sensor.enabled ? "true" : "false").c_str();
+        sensorObj["enabled"] = sensor.enabled ? "true" : "false";
         sensorObj["name"] = sensor.name.c_str();
     }
 
