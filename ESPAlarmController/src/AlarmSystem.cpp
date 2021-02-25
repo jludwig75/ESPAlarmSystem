@@ -184,6 +184,8 @@ void AlarmSystem::onLoop()
 
     _webServer.onLoop();
     _log.onLoop();
+
+    _memTracker.onLoop();
 }
 
 AlarmState AlarmSystem::state() const

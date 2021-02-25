@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ESPNowServer.h>
+#include <MemTracker.h>
 
 #include "ActivityLog.h"
 #include "AlarmOperation.h"
@@ -49,6 +50,7 @@ private:
     SensorMap _sensors;    // Well slap me! I used and STL container in FW code!
     AlarmPolicy _policy;
     AlarmState _alarmState;
+    MemTracker _memTracker;
     unsigned long _lastCheck;
     struct SensorEventMessage
     {
