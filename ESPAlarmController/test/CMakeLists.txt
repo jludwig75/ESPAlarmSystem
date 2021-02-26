@@ -65,40 +65,40 @@ set_target_properties(AlarmSystem_test PROPERTIES
 
 
                         
-add_executable(AlarmPersistentState_test
-        AlarmPersistentState_test.cpp
+add_executable(AlarmPersistentState_unittest
+        AlarmPersistentState_unittest.cpp
         ${PROJECT_SOURCE_DIR}/src/AlarmPersistentState.cpp)
 
-target_link_libraries(AlarmPersistentState_test
+target_link_libraries(AlarmPersistentState_unittest
                  test_main
                  system_mocks)
 
-target_include_directories(AlarmPersistentState_test PUBLIC
+target_include_directories(AlarmPersistentState_unittest PUBLIC
                     ${PROJECT_SOURCE_DIR}/src
                     ${PROJECT_SOURCE_DIR}/include
                     ${PROJECT_SOURCE_DIR}/lib/AutoFile
                     ${PROJECT_SOURCE_DIR}/lib/Logging)
 
-add_test(NAME AlarmPersistentState_test
-        COMMAND AlarmPersistentState_test)
+add_test(NAME AlarmPersistentState_unittest
+        COMMAND AlarmPersistentState_unittest)
 
-set_target_properties(AlarmPersistentState_test PROPERTIES
+set_target_properties(AlarmPersistentState_unittest PROPERTIES
                         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
                         LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
 
 
 
                         
-add_executable(SensorDb_test
-        SensorDb_test.cpp
+add_executable(SensorDb_unittest
+        SensorDb_unittest.cpp
         ${PROJECT_SOURCE_DIR}/src/AlarmSensor.cpp
         ${PROJECT_SOURCE_DIR}/src/SensorDb.cpp)
 
-target_link_libraries(SensorDb_test
+target_link_libraries(SensorDb_unittest
                  test_main
                  system_mocks)
 
-target_include_directories(SensorDb_test PUBLIC
+target_include_directories(SensorDb_unittest PUBLIC
                     ${PROJECT_SOURCE_DIR}/src
                     ${PROJECT_SOURCE_DIR}/include
                     ${PROJECT_SOURCE_DIR}/lib/AutoFile
@@ -108,10 +108,10 @@ target_include_directories(SensorDb_test PUBLIC
                     ${PROJECT_SOURCE_DIR}/lib/WavFilePlayer
                     ${PROJECT_SOURCE_DIR}/.pio/libdeps/lolin32/ArduinoJson/src)
 
-add_test(NAME SensorDb_test
-        COMMAND SensorDb_test)
+add_test(NAME SensorDb_unittest
+        COMMAND SensorDb_unittest)
 
-set_target_properties(SensorDb_test PROPERTIES
+set_target_properties(SensorDb_unittest PROPERTIES
                         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
                         LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
 
