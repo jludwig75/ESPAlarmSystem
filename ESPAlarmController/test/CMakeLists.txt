@@ -19,6 +19,11 @@ target_include_directories(AlarmPolicy_uinttest PUBLIC
 add_test(NAME AlarmPolicy_uinttest
         COMMAND AlarmPolicy_uinttest)
 
+set_target_properties(AlarmPolicy_uinttest PROPERTIES
+                        COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
+                        LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
+
+
 
 
 add_executable(AlarmSystem_test
@@ -51,4 +56,9 @@ target_include_directories(AlarmSystem_test PUBLIC
                     ${PROJECT_SOURCE_DIR}/.pio/libdeps/lolin32/ArduinoJson/src)
 
 add_test(NAME AlarmSystem_test
-        COMMAND AlarmSystem_test)         
+        COMMAND AlarmSystem_test)
+
+set_target_properties(AlarmSystem_test PROPERTIES
+                        COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
+                        LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
+
