@@ -87,7 +87,6 @@ set_target_properties(AlarmPersistentState_unittest PROPERTIES
                         LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
 
 
-
                         
 add_executable(SensorDb_unittest
         SensorDb_unittest.cpp
@@ -115,3 +114,25 @@ set_target_properties(SensorDb_unittest PROPERTIES
                         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
                         LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
 
+
+                        
+add_executable(ActivityLog_unittest
+        ActivityLog_unittest.cpp
+        ${PROJECT_SOURCE_DIR}/src/ActivityLog.cpp)
+
+target_link_libraries(ActivityLog_unittest
+                 test_main
+                 system_mocks)
+
+target_include_directories(ActivityLog_unittest PUBLIC
+                    ${PROJECT_SOURCE_DIR}/src
+                    ${PROJECT_SOURCE_DIR}/include
+                    ${PROJECT_SOURCE_DIR}/lib/AutoFile
+                    ${PROJECT_SOURCE_DIR}/lib/Logging)
+
+add_test(NAME ActivityLog_unittest
+        COMMAND ActivityLog_unittest)
+
+set_target_properties(ActivityLog_unittest PROPERTIES
+                        COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
+                        LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
