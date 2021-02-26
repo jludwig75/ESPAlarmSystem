@@ -2,9 +2,12 @@
 
 #include "AlarmPersistentState.h"
 
+#include <SPIFFS.h>
+
 
 SCENARIO( "Test AlarmPersistentState", "" )
 {
+    REQUIRE(SPIFFS.format());
     AlarmPersistentState persistState;
     REQUIRE(persistState.begin());
     REQUIRE(persistState.get() == AlarmPersistentState::AlarmState::Disarmed);  // Default value

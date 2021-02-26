@@ -4,8 +4,10 @@ add_library(system_mocks STATIC
             FileData.cpp
             FileImpl.cpp
             FsImpl.cpp
+            Print.cpp
             SPIFFS.cpp
             stdlib_noniso.c
+            Stream.cpp
             WString.cpp)
 
 target_include_directories(system_mocks PUBLIC

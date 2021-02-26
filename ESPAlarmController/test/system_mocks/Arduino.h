@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cassert>
-
+#include <stdarg.h>
 #include <time.h>
 
 #include <arpa/inet.h>
@@ -43,17 +43,6 @@ void configTime(long gmtOffset_sec, int daylightOffset_sec,
         const char* server1, const char* server2 = nullptr, const char* server3 = nullptr);
 bool getLocalTime(struct tm * info, uint32_t ms = 5000);
 
-class Stream
-{
-public:
-    virtual size_t write(uint8_t) = 0;
-    virtual size_t write(const uint8_t *buf, size_t size) = 0;
-    virtual int available() = 0;
-    virtual int read() = 0;
-    virtual int peek() = 0;
-    virtual void flush() = 0;
-};
-
 typedef void * QueueHandle_t;
 
 class SerialPort
@@ -78,3 +67,5 @@ typedef uint16_t        TickType_t;
 QueueHandle_t xQueueCreate( const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize );
 BaseType_t xQueueSend( QueueHandle_t xQueue, const void * const pvItemToQueue, TickType_t xTicksToWait );
 BaseType_t xQueueReceive( QueueHandle_t xQueue, void * const pvBuffer, TickType_t xTicksToWait );
+
+#include "Stream.h"

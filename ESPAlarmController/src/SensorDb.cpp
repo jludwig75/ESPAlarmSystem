@@ -1,5 +1,6 @@
 #include "SensorDb.h"
 
+#define ARDUINO
 #include <ArduinoJson.h>
 #include <AutoFile.h>
 #include <Logging.h>
@@ -75,7 +76,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
                 log_e("Sensor database file sensor object has no \"id\" key");
                 return false;
             }
-            String idString = sensor["id"].as<const char *>();
+            String idString = sensor["id"].as<String>();
             uint64_t id;
             if (!fromString(idString, id))
             {
@@ -86,7 +87,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
             bool enabled = false;
             if (sensor.containsKey("enabled"))
             {
-                String enabledString = sensor["enabled"].as<const char *>();
+                String enabledString = sensor["enabled"].as<String>();
                 if (enabledString == "true")
                 {
                     enabled = true;
@@ -101,7 +102,7 @@ bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
             String name;
             if (sensor.containsKey("name"))
             {
-                name = sensor["name"].as<const char *>();
+                name = sensor["name"].as<String>();
             }
 
             _sensors.push_back(AlarmSensor(id, enabled, name, SensorState::Unknown));
@@ -136,6 +137,7 @@ bool SensorDataBase::storeSensor(const AlarmSensor& sensor)
 
     // Add the sensor to the list once it has been written to the file.
     _sensors = _tempSensorList;
+    _listLoaded = true;
     return true;
 }
 
@@ -186,9 +188,9 @@ bool SensorDataBase::writeDbFile(const SensorList& sensors)
     {
         auto sensorObj = arrayData.createNestedObject();
 
-        sensorObj["id"] = toString(sensor.id).c_str();
+        sensorObj["id"] = toString(sensor.id);
         sensorObj["enabled"] = sensor.enabled ? "true" : "false";
-        sensorObj["name"] = sensor.name.c_str();
+        sensorObj["name"] = sensor.name;
     }
 
     // TODO: Check for and handle file write errors.
