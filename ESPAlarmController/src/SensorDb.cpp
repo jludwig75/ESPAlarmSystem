@@ -37,12 +37,21 @@ bool SensorDataBase::begin()
             log_e("Failed to create initial sensor datbase file");
             return false;
         }
+        _listLoaded = true;
+    }
+    else
+    {
+        SensorList sensors;
+        if (!getAlarmSensors(sensors))
+        {
+            return false;
+        }
     }
 
     return true;
 }
 
-bool SensorDataBase::getAlarmSensors(std::vector<AlarmSensor>& sensors) const
+bool SensorDataBase::getAlarmSensors(SensorList& sensors) const
 {
     if (!_listLoaded)
     {

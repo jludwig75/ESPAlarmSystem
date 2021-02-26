@@ -78,7 +78,7 @@ SCENARIO( "Test SensorDb", "" )
                     {
                         db = SensorDataBase();
                         REQUIRE(db.begin());
-                        THEN( "the sensors retain thier state" )
+                        THEN( "the sensors retain their state" )
                         {
                             SensorList sensorList;
                             REQUIRE(db.getAlarmSensors(sensorList));
