@@ -174,6 +174,7 @@ bool ActivityLog::getEvent(size_t i, unsigned long& id, time_t& eventTime, Event
         i -= maxEntries();
     }
 
+    assert(_log[i].event != EventType::Nothing);
     if (_log[i].event == EventType::Nothing)
     {
         return false;

@@ -166,7 +166,7 @@ bool SensorDataBase::updateSensor(const AlarmSensor& sensor)
     }
     if (!found)
     {
-        _tempSensorList.push_back(sensor);
+        return false;
     }
 
     if (!writeDbFile(_tempSensorList))
