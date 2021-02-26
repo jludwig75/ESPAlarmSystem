@@ -68,7 +68,7 @@ void ActivityLog::begin()
         }
 
         _eventsStored++;
-        if (i > 0 && _log[i].eventTime >= _log[_nextLogEntry].eventTime)
+        if (i > 0 && _log[i].id > _log[_nextLogEntry].id)
         {
             _nextLogEntry = i;
         }
