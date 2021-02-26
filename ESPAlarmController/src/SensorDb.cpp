@@ -1,6 +1,5 @@
 #include "SensorDb.h"
 
-#define ARDUINO
 #include <ArduinoJson.h>
 #include <AutoFile.h>
 #include <Logging.h>

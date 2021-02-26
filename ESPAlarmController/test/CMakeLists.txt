@@ -1,3 +1,5 @@
+add_compile_definitions(ARDUINO)
+
 add_subdirectory(system_mocks)
 
 add_executable(AlarmPolicy_uinttest
