@@ -21,7 +21,33 @@ SCENARIO( "Test AlarmPersistentState", "" )
 
         THEN( "the state is restored" )
         {
-            REQUIRE(persistState.get() == AlarmPersistentState::AlarmState::Armed);  // Default value
+            REQUIRE(persistState.get() == AlarmPersistentState::AlarmState::Armed);
+        }
+    }
+
+    WHEN( "the state is set to triggered" )
+    {
+        REQUIRE(persistState.set(AlarmPersistentState::AlarmState::Triggerd));
+
+        persistState = AlarmPersistentState();
+        REQUIRE(persistState.begin());
+
+        THEN( "triggered is persisted" )
+        {
+            REQUIRE(persistState.get() == AlarmPersistentState::AlarmState::Triggerd);
+        }
+    }
+
+    WHEN( "the state is set to error" )
+    {
+        REQUIRE(persistState.set(AlarmPersistentState::AlarmState::Error));
+
+        persistState = AlarmPersistentState();
+        REQUIRE(persistState.begin());
+
+        THEN( "triggered is persisted" )
+        {
+            REQUIRE(persistState.get() == AlarmPersistentState::AlarmState::Error);
         }
     }
 }
