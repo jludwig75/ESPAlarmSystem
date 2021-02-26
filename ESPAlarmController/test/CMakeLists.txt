@@ -25,7 +25,6 @@ set_target_properties(AlarmPolicy_uinttest PROPERTIES
 
 
 
-
 add_executable(AlarmSystem_test
         AlarmSystem_test.cpp
         ${PROJECT_SOURCE_DIR}/src/ActivityLog.cpp
@@ -59,6 +58,31 @@ add_test(NAME AlarmSystem_test
         COMMAND AlarmSystem_test)
 
 set_target_properties(AlarmSystem_test PROPERTIES
+                        COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
+                        LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
+
+
+
+                        
+
+add_executable(AlarmPersistentState_test
+        AlarmPersistentState_test.cpp
+        ${PROJECT_SOURCE_DIR}/src/AlarmPersistentState.cpp)
+
+target_link_libraries(AlarmPersistentState_test
+                 test_main
+                 system_mocks)
+
+target_include_directories(AlarmPersistentState_test PUBLIC
+                    ${PROJECT_SOURCE_DIR}/src
+                    ${PROJECT_SOURCE_DIR}/include
+                    ${PROJECT_SOURCE_DIR}/lib/AutoFile
+                    ${PROJECT_SOURCE_DIR}/lib/Logging)
+
+add_test(NAME AlarmPersistentState_test
+        COMMAND AlarmPersistentState_test)
+
+set_target_properties(AlarmPersistentState_test PROPERTIES
                         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
                         LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
 
