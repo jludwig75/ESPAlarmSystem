@@ -136,3 +136,27 @@ add_test(NAME ActivityLog_unittest
 set_target_properties(ActivityLog_unittest PROPERTIES
                         COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
                         LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
+
+
+                        
+add_executable(AlarmSensor_unittest
+        AlarmSensor_unittest.cpp
+        ${PROJECT_SOURCE_DIR}/src/AlarmSensor.cpp)
+
+target_link_libraries(AlarmSensor_unittest
+                 test_main
+                 system_mocks)
+
+target_include_directories(AlarmSensor_unittest PUBLIC
+                    ${PROJECT_SOURCE_DIR}/src
+                    ${PROJECT_SOURCE_DIR}/include
+                    ${PROJECT_SOURCE_DIR}/lib/ESPNowServer
+                    ${PROJECT_SOURCE_DIR}/lib/MemTracker
+                    ${PROJECT_SOURCE_DIR}/lib/WavFilePlayer)
+
+add_test(NAME AlarmSensor_unittest
+        COMMAND AlarmSensor_unittest)
+
+set_target_properties(AlarmSensor_unittest PROPERTIES
+                        COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fPIC"
+                        LINK_FLAGS "-fprofile-arcs -ftest-coverage -fPIC -lgcov")
