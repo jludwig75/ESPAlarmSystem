@@ -1,0 +1,5 @@
+#!/bin/sh
+ctest
+ctest -T coverage
+mkdir coverage
+gcovr -r .. --html -o coverage/index.html --html-details

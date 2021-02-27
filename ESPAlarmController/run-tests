@@ -1,0 +1,10 @@
+#!/bin/sh
+rm -rf build
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make -j4
+../coverage-report
+ctest -T MemCheck
+cd ..
+echo "Run \"php -S 0.0.0.0:8123 -t build/coverage/ &\" to view coverage report"
