@@ -542,6 +542,21 @@ SCENARIO( "Test AlarmPolicy::checkSensor", "" )
             }
         }
 
+        WHEN( "the sensor is checked and and the alarm system is triggered" )
+        {
+            setUptimeMillis(MAX_SENSOR_UPDATE_TIMEOUT_DISARMED_MS + sensor.lastUpdate + 10);
+
+            AlarmPolicy::Actions actions;
+            policy.checkSensor(actions, sensor, AlarmState::AlarmTriggered);
+
+            THEN( "nothing happens" )
+            {
+                REQUIRE_FALSE(actions.triggerAlarm);
+                REQUIRE_FALSE(actions.cancelArming);
+                REQUIRE_FALSE(actions.playSound);
+            }
+        }
+
         WHEN( "the sensor is checked and and the alarm system is disarmed" )
         {
             setUptimeMillis(MAX_SENSOR_UPDATE_TIMEOUT_DISARMED_MS + sensor.lastUpdate + 10);
