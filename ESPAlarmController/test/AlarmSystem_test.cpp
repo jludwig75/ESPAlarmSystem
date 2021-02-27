@@ -7,6 +7,7 @@
 
 #include "protocol.h"
 #include "TestESPNowServer.h"
+#include "TestWavFilePlayer.h"
 
 #include <memory>
 
@@ -140,6 +141,38 @@ SCENARIO( "Test AlarmSystem", "[]" )
                             REQUIRE(alarm->state() == AlarmState::Disarmed);
                         }
 
+                        WHEN( "a sensor is opened" )
+                        {
+                            // Clear out all sounds
+                            while (numberOfAudioFilesPlayed() > 0)
+                            {
+                                lastAudioFilePlayed();
+                            }
+                            SensorState state{ESP_SLEEP_WAKEUP_UNDEFINED, SensorState::State::Open, 3.3};
+                            TestESPNowServer::instance().send(sensor1MacAddress, reinterpret_cast<const uint8_t*>(&state), sizeof(state));
+                            alarm->onLoop();
+
+                            THEN( "an open chime is played" )
+                            {
+                                REQUIRE(numberOfAudioFilesPlayed() == 1);
+                                REQUIRE(lastAudioFilePlayed() == "/C_OPEN.WAV");
+
+                                WHEN( "a sensor is closed" )
+                                {
+                                    SensorState state{ESP_SLEEP_WAKEUP_UNDEFINED, SensorState::State::Closed, 3.3};
+                                    TestESPNowServer::instance().send(sensor1MacAddress, reinterpret_cast<const uint8_t*>(&state), sizeof(state));
+                                    alarm->onLoop();
+
+                                    THEN( "a close chime is played" )
+                                    {
+                                        REQUIRE(numberOfAudioFilesPlayed() == 1);
+                                        // TODO: set sounds: REQUIRE(lastAudioFilePlayed() == "/C_CLOSE.WAV");
+                                        REQUIRE(lastAudioFilePlayed() == "/C_OPEN.WAV");
+                                    }
+                                }
+                            }
+               }
+
                         WHEN( "the alram is armed" )
                         {
                             REQUIRE(alarm->arm());
@@ -184,6 +217,10 @@ SCENARIO( "Test AlarmSystem", "[]" )
     GIVEN ( "an alarm system with two closed sensors" )
     {
         REQUIRE(SPIFFS.format());
+        while (numberOfAudioFilesPlayed() > 0)
+        {
+            lastAudioFilePlayed();
+        }
         auto alarm = std::make_unique<AlarmSystem>("", "", 0, 0, 0);
         alarm->begin();
 
@@ -208,15 +245,28 @@ SCENARIO( "Test AlarmSystem", "[]" )
             REQUIRE(alarm->updateSensor(sensor));
         }
 
+        REQUIRE(numberOfAudioFilesPlayed() == 0);
+
         // arm the system
         REQUIRE(alarm->arm());
         REQUIRE(alarm->state() == AlarmState::Armed);
 
+        // Arming sound must have been played
+        REQUIRE(numberOfAudioFilesPlayed() == 1);
+        // TODO: change sound files: REQUIRE(lastAudioFilePlayed() == "/A_ARM.WAV");
+        REQUIRE(lastAudioFilePlayed() == "/C_OPEN.WAV");
+
         WHEN( "The alarm system is reset" )
         {
             alarm.reset();
+            while (numberOfAudioFilesPlayed() > 0)
+            {
+                lastAudioFilePlayed();
+            }
             alarm = std::make_unique<AlarmSystem>("", "", 0, 0, 0);
             alarm->begin();
+
+            REQUIRE(numberOfAudioFilesPlayed() == 0);
 
             THEN( "the alarm is still armed" )
             {
@@ -232,6 +282,12 @@ SCENARIO( "Test AlarmSystem", "[]" )
             // Advance loop to report sensor
             alarm->onLoop();
 
+            THEN( "the alarm sound is played" )
+            {
+                REQUIRE(numberOfAudioFilesPlayed() == 1);
+                REQUIRE(lastAudioFilePlayed() == "/A_SOUND.WAV");
+            }
+
             THEN( "the alram is triggered ")
             {
                 REQUIRE(alarm->state() == AlarmState::AlarmTriggered);
@@ -241,22 +297,40 @@ SCENARIO( "Test AlarmSystem", "[]" )
             WHEN( "The alarm system is reset" )
             {
                 alarm.reset();
+                while (numberOfAudioFilesPlayed() > 0)
+                {
+                    lastAudioFilePlayed();
+                }
                 alarm = std::make_unique<AlarmSystem>("", "", 0, 0, 0);
                 alarm->begin();
+                // Advance loop once to play alarm triggered sound
+                alarm->onLoop();
 
                 THEN( "the alarm is still triggered" )
                 {
                     REQUIRE(alarm->state() == AlarmState::AlarmTriggered);
                 }
                     
-                WHEN( "there is a long delay" )
+                THEN( "the alarm sound is played again" )
                 {
-                    delay(10000);
-                    alarm->onLoop();
+                    REQUIRE(numberOfAudioFilesPlayed() == 1);
+                    REQUIRE(lastAudioFilePlayed() == "/A_SOUND.WAV");
 
-                    THEN( "the alarm is still triggered" )
+                    WHEN( "there is a long delay" )
                     {
-                        REQUIRE(alarm->state() == AlarmState::AlarmTriggered);
+                        delay(1500);
+                        alarm->onLoop();
+
+                        THEN( "the alarm is still triggered" )
+                        {
+                            REQUIRE(alarm->state() == AlarmState::AlarmTriggered);
+                        }
+                        
+                        THEN( "the alarm sound is played again" )
+                        {
+                            REQUIRE(numberOfAudioFilesPlayed() == 1);
+                            REQUIRE(lastAudioFilePlayed() == "/A_SOUND.WAV");
+                        }
                     }
                 }
             }

@@ -423,6 +423,8 @@ void AlarmSystem::handleAlarmPolicyActions(const AlarmPolicy::Actions& actions)
 
     if (actions.cancelArming)
     {
+        // TODO: This code is not exercised, because we're not
+        // using the arming state.
         if (_alarmState != AlarmState::Arming)
         {
             log_e("Invaluid request to cancel arming when alarm system is not arming");
