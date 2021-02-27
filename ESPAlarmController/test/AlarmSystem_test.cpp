@@ -171,7 +171,7 @@ SCENARIO( "Test AlarmSystem", "[]" )
                                     }
                                 }
                             }
-               }
+                        }
 
                         WHEN( "the alram is armed" )
                         {

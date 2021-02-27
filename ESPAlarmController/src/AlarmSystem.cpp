@@ -282,6 +282,7 @@ void AlarmSystem::disarm()
         return;
     }
 
+    _soundPlayer.silence();
     _alarmState = AlarmState::Disarmed;
     log_a("Alarm system disarmed");
     if (!_soundPlayer.playSound(SoundPlayer::Sound::AlarmDisarm))
