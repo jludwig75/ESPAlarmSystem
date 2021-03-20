@@ -2,6 +2,7 @@
 
 #include <ArduinoJson.h>
 #include <Logging.h>
+#include <uri/UriBraces.h>
 
 #include "ActivityLog.h"
 #include "AlarmSystem.h"
@@ -85,8 +86,8 @@ void AlarmSystemWebServer::begin()
 {
     _server.on("/alarm_system/state", HTTP_GET, [this]() { handleGetState(); } );
     // This has to be before the following handler or that handler overrides this one.
-    _server.on("/alarm_system/sensor/{}", HTTP_GET, [this]() { handleGetSensor(); } );
-    _server.on("/alarm_system/sensor/{}", HTTP_PUT, [this]() { handleUpdateSensor(); } );
+    _server.on(UriBraces("/alarm_system/sensor/{}"), HTTP_GET, [this]() { handleGetSensor(); } );
+    _server.on(UriBraces("/alarm_system/sensor/{}"), HTTP_PUT, [this]() { handleUpdateSensor(); } );
     _server.on("/alarm_system/sensor", HTTP_GET, [this]() { handleGetSensors(); } );
     _server.on("/alarm_system/operation", HTTP_GET, [this]() { handleGetValidOperations(); } );
     _server.on("/alarm_system/operation", HTTP_POST, [this]() { handlePostOperation(); } );
